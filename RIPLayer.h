@@ -7,7 +7,7 @@ public:
 	CRIPLayer(char* pName = NULL);
 	virtual ~CRIPLayer();
 
-	BOOL Send(int command,int dev_num);
+	BOOL Send(int command,int dev_num, int resend);
 	BOOL Receive(unsigned char* ppayload, int dev_num);
 
 public:

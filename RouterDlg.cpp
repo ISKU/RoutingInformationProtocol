@@ -365,8 +365,8 @@ void CRouterDlg::OnBnClickedNicSetButton()
 	m_EthernetLayer->SetSourceAddress(OidData->Data,1);
 	m_EthernetLayer->SetSourceAddress(OidData->Data,2);
 
-	m_RIPLayer->Send(1, 1);
-	m_RIPLayer->Send(1, 2);
+	m_RIPLayer->Send(1, 1, 0);
+	m_RIPLayer->Send(1, 2, 0);
 	StartReadThread(); // MH: RIP Response Thread start 30ÃÊ
 	//////////////////////////////////////////////////////////////////////
 
@@ -566,7 +566,7 @@ unsigned int CRouterDlg::WaitRipResponseMessagePacket_1(LPVOID pParam)
 
 	while(1) {
 		Sleep(7000);
-		temp_CRouterDlgLayer->GetUnderLayer()->Send(0, 2, 1);
+		temp_CRouterDlgLayer->GetUnderLayer()->Send(2, 1, 0);
 	}
 
 	return 0;
@@ -577,7 +577,7 @@ unsigned int CRouterDlg::WaitRipResponseMessagePacket_2(LPVOID pParam){
 	
 	while(1) {
 		Sleep(7000);
-		temp_CRouterDlgLayer->GetUnderLayer()->Send(0, 2, 2);
+		temp_CRouterDlgLayer->GetUnderLayer()->Send(2, 2, 0);
 	}
 
 	return 0;
