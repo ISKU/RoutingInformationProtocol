@@ -66,13 +66,13 @@ unsigned short CIPLayer::SetChecksum(){
 	unsigned char* p_header = (unsigned char*)&Ip_header;
 	unsigned short word;
 	unsigned int sum = 0;
-	unsigned short i;
+	int i;
 
 	for(i = 0; i < IP_HEADER_SIZE; i = i+2){
+		if(i == 10) continue;
 		word = ((p_header[i] << 8) & 0xFF00) + (p_header[i+1] & 0xFF);
 		sum = sum + (unsigned int)word;
 	}
-
 	while(sum >> 16){
 		sum = (sum&0xFFFF) + (sum >> 16);
 	}
@@ -81,32 +81,31 @@ unsigned short CIPLayer::SetChecksum(){
 	return (unsigned short)sum;
 }
 
-BOOL CIPLayer::IsValidChecksum(unsigned char* received_header, unsigned short checksum){
-	unsigned char* p_header = received_header;
-	unsigned short word;
+BOOL CIPLayer::IsValidChecksum(unsigned char* p_header, unsigned short checksum){
+	unsigned short word, ret;
 	unsigned int sum = 0;
 	int i;
-
+	
 	for(i = 0; i < IP_HEADER_SIZE; i = i+2){
+		if(i == 10) continue;
 		word = ((p_header[i] << 8) & 0xFF00) + (p_header[i+1] & 0xFF);
 		sum = sum + (unsigned int)word;
 	}
-
 	while(sum >> 16){
 		sum = (sum&0xFFFF) + (sum >> 16);
 	}
-
-	return !~(sum | checksum);
+	
+	ret = sum & checksum;
+	return	ret == 0;
 }
 
 // ppayload == (unsigned char*)&Tcp_header
 BOOL CIPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 {
 	// IP 주소 셋팅은 Set 버튼을 눌렀을때 셋팅이 되었으므로 data와 전체 크기를 저장후 전송
-	nlength = IP_HEADER_SIZE + nlength;
+	nlength = nlength + IP_HEADER_SIZE;
 	Ip_header.Ip_len = (unsigned short)htons(nlength);
 	memcpy(Ip_header.Ip_srcAddressByte, GetSrcIP(dev_num), 4);
-	Ip_header.Ip_checksum = 0x0000;
 	Ip_header.Ip_checksum = htons(SetChecksum());
 
 	memcpy(Ip_header.Ip_data , ppayload , nlength);
@@ -117,14 +116,16 @@ BOOL CIPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 BOOL CIPLayer::Receive(unsigned char* ppayload,int dev_num)
 {
 	PIpHeader pFrame = (PIpHeader)ppayload;
+	unsigned short rec_checksum;
 
 	if( !memcmp(&pFrame->Ip_srcAddressByte, GetSrcIP(dev_num), 4) ){ //자신이 보낸 패킷은 버린다
 		return FALSE;
 	}
-	if( !IsValidChecksum(ppayload, ntohs(pFrame->Ip_checksum)) ){
+
+	//rec_checksum = ntohs(pFrame->Ip_checksum);
+	if( !IsValidChecksum((unsigned char*)pFrame, ntohs(pFrame->Ip_checksum)) ){
 		return FALSE;
 	}
-
 	if (pFrame->Ip_protocol == 0x11)  // udp protocol (17) 확인
 	{ 
 		return GetUpperLayer(0)->Receive((unsigned char *)pFrame->Ip_data, dev_num);
