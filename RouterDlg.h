@@ -62,11 +62,10 @@ public:
 	} RoutingTable, *RoutingTablePtr;
 
 	static CList<RoutingTable, RoutingTable&> route_table;
-	static CList<RoutingTable, RoutingTable&> route_table2;
+	//static CList<RoutingTable, RoutingTable&> route_table2;
 
 public:
 	CListCtrl ListBox_RoutingTable;
-	CListCtrl ListBox_RoutingTable2;
 	CListCtrl ListBox_ARPCacheTable;
 	CListCtrl ListBox_ARPProxyTable;
 	afx_msg void OnBnClickedCacheDelete();
@@ -87,7 +86,7 @@ public:
 	//void add_route_table(unsigned char ipAddress[4], unsigned int metric, unsigned char dstInterface[4]);
 	
 	// UpdateRouteTable
-	void UpdateRouteTable(int dev_num);
+	void UpdateRouteTable();
 	afx_msg void OnCbnSelchangeNic2Combo();
 	CIPAddressCtrl m_nic1_ip;
 	CIPAddressCtrl m_nic2_ip;

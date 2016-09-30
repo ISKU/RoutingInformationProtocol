@@ -59,12 +59,12 @@ BOOL CUDPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 BOOL CUDPLayer::Receive(unsigned char* ppayload, int dev_num)
 {
 	PUdpHeader pFrame = (PUdpHeader) ppayload;
+	BOOL bSuccess = false;
 
 	if (pFrame->Udp_checksum) {
 		;// checksums calculator
 	}
 
-	BOOL bSuccess;
 	if (pFrame->Udp_dstPort == 0x0802) { // check dst port 520
 		SetLength((unsigned short) htons(pFrame->Udp_length), dev_num);
 		bSuccess = GetUpperLayer(0)->Receive((unsigned char *)pFrame->Udp_data, dev_num);

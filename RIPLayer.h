@@ -32,13 +32,11 @@ private:
 	unsigned char dev_1_udp_addr[4];
 	unsigned char dev_2_udp_addr[4];
 	inline void	ResetHeader();
-	inline void CreateRequestMessage(int dev_num);
-	inline void CreateResponseMessageTable(int dev_num);
-	inline void addMessageTable(PRipHeader pFrame, unsigned short length, int dev_num);
+	inline void CreateRequestMessage();
+	inline void CreateResponseMessageTable();
 
 	// MH: Search Route Table
-	int ContainsRouteTableEntry(unsigned char Ip_addr[4], int dev_num);
-
+	int ContainsRouteTableEntry(unsigned char Ip_addr[4]);
 
 	RipHeader Rip_header;
 };
