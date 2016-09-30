@@ -8,7 +8,7 @@ CRIPLayer::CRIPLayer(char* pName) : CBaseLayer(pName)
 
 CRIPLayer::~CRIPLayer() { }
 
-BOOL CRIPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
+BOOL CRIPLayer::Send( int command, int dev_num)
 {
 	unsigned char broadcast[4];
 	memset(broadcast, 0xff, 4);
@@ -18,13 +18,13 @@ BOOL CRIPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 	CRouterDlg * routerDlg =  ((CRouterDlg *)GetUpperLayer(0));
 	int messageLength;
 
-	if (nlength == 1) {
+	if (command == 1) {
 		Rip_header.Rip_command = 0x01;
 		CreateRequestMessage();
 		messageLength = 20;
 	}
 
-	if (nlength == 2) {
+	if (command == 2) {
 		Rip_header.Rip_command = 0x02;
 		CreateResponseMessageTable();
 		messageLength = CRouterDlg::route_table.GetSize() * 20;
@@ -45,7 +45,7 @@ BOOL CRIPLayer::Receive(unsigned char* ppayload, int dev_num)
 	unsigned short length = routerDlg->m_UDPLayer->GetLength(dev_num) - 12;
 
 	if (pFrame->Rip_command == 0x01) // command : request
-		Send(0, 2, dev_num);
+		Send(2, dev_num);
 
 	if (pFrame->Rip_command == 0x02) { // command : response
 		for (int index = 0; index < (length / 20); index++) {

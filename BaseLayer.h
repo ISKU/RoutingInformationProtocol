@@ -32,6 +32,7 @@ public:
 	//         int				- the length of data
 	// 하위 계층으로 data를 보내는 함수
 	virtual	BOOL	Send( unsigned char* ppayload, int nlength,int dev_num) 	{ return FALSE ; }
+	virtual	BOOL	Send( int command ,int dev_num) 	{ return FALSE ; }
 	// param : unsigned char*	- the data of the underlayer
 	// 하위 계층에서 data를 받아오는 함수
 	virtual	BOOL	Receive( unsigned char* ppayload ,int dev_num) 	{ return FALSE ; } 
