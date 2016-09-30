@@ -117,7 +117,7 @@ BOOL CIPLayer::Receive(unsigned char* ppayload,int dev_num)
 {
 	PIpHeader pFrame = (PIpHeader)ppayload;
 
-	if( !memcmp(&pFrame->Ip_srcAddressByte, GetSrcIP(dev_num), 4) ){ //자신이 보낸 패킷은 버린다
+	if( !memcmp(pFrame->Ip_srcAddressByte, GetSrcIP(dev_num), 4) ){ //자신이 보낸 패킷은 버린다
 		return FALSE;
 	}
 	if( !IsValidChecksum((unsigned char*)pFrame, ntohs(pFrame->Ip_checksum)) ){
