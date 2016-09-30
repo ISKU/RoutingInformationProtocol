@@ -365,8 +365,8 @@ void CRouterDlg::OnBnClickedNicSetButton()
 	m_EthernetLayer->SetSourceAddress(OidData->Data,1);
 	m_EthernetLayer->SetSourceAddress(OidData->Data,2);
 
-	m_RIPLayer->Send(0, 1, 1);
-	m_RIPLayer->Send(0, 1, 2);
+	m_RIPLayer->Send(1, 1);
+	m_RIPLayer->Send(1, 2);
 	StartReadThread(); // MH: RIP Response Thread start 30√ 
 	//////////////////////////////////////////////////////////////////////
 

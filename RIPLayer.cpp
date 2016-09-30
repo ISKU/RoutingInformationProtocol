@@ -8,17 +8,17 @@ CRIPLayer::CRIPLayer(char* pName) : CBaseLayer(pName)
 
 CRIPLayer::~CRIPLayer() { }
 
-BOOL CRIPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
+BOOL CRIPLayer::Send(int command, int dev_num)
 {
 	unsigned char broadcast[4];
 	memset(broadcast, 0xff, 4);
 	unsigned char macbroadcast[6];
 	memset(macbroadcast, 0xff, 6);
 
-	CRouterDlg * routerDlg =  ((CRouterDlg *)GetUpperLayer(0));
+	CRouterDlg * routerDlg = ((CRouterDlg *)GetUpperLayer(0));
 	int messageLength;
 
-	if (nlength == 1) {
+	if (command == 1) {
 		Rip_header.Rip_command = 0x01;
 		CreateRequestMessage();
 
@@ -26,7 +26,7 @@ BOOL CRIPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 		messageLength = 20;
 	}
 
-	if (nlength == 2) {
+	if (command == 2) {
 		Rip_header.Rip_command = 0x02;
 		CreateResponseMessageTable();
 
@@ -50,9 +50,8 @@ BOOL CRIPLayer::Receive(unsigned char* ppayload, int dev_num)
 	// 받은 Packet에서 RIP Message에 실린 Entry의 길이(UDP 전체 길이에서 UDP header(8), RIP 맨 윗줄(4) 를 빼줌)
 	unsigned short length = routerDlg->m_UDPLayer->GetLength(dev_num) - 12;
 
-	if (pFrame->Rip_command == 0x01) { // command : Request를 받은 경우, command를 Response로 변경하여 다시 보냄
-		Send(0, 2, dev_num);
-	}
+	if (pFrame->Rip_command == 0x01) // command : Request를 받은 경우, command를 Response로 변경하여 다시 보냄
+		Send(2, dev_num);
 
 	if (pFrame->Rip_command == 0x02) { // command : Response를 받은 경우, Routing table 업데이트
 
