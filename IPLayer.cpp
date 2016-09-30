@@ -62,13 +62,53 @@ void CIPLayer::SetProtocol( unsigned char protocol, int dev_num )
 	Ip_header.Ip_protocol = protocol;
 }
 
+unsigned short CIPLayer::SetChecksum(){
+	unsigned char* p_header = (unsigned char*)&Ip_header;
+	unsigned short word;
+	unsigned int sum = 0;
+	unsigned short i;
+
+	for(i = 0; i < IP_HEADER_SIZE; i = i+2){
+		word = ((p_header[i] << 8) & 0xFF00) + (p_header[i+1] & 0xFF);
+		sum = sum + (unsigned int)word;
+	}
+
+	while(sum >> 16){
+		sum = (sum&0xFFFF) + (sum >> 16);
+	}
+	sum = ~sum;
+
+	return (unsigned short)sum;
+}
+
+BOOL CIPLayer::IsValidChecksum(unsigned char* received_header, unsigned short checksum){
+	unsigned char* p_header = received_header;
+	unsigned short word;
+	unsigned int sum = 0;
+	int i;
+
+	for(i = 0; i < IP_HEADER_SIZE; i = i+2){
+		word = ((p_header[i] << 8) & 0xFF00) + (p_header[i+1] & 0xFF);
+		sum = sum + (unsigned int)word;
+	}
+
+	while(sum >> 16){
+		sum = (sum&0xFFFF) + (sum >> 16);
+	}
+
+	return !~(sum | checksum);
+}
+
 // ppayload == (unsigned char*)&Tcp_header
 BOOL CIPLayer::Send(unsigned char* ppayload, int nlength,int dev_num)
 {
+	unsigned short checksum;
+
 	// IP 주소 셋팅은 Set 버튼을 눌렀을때 셋팅이 되었으므로 data와 전체 크기를 저장후 전송
 	nlength = IP_HEADER_SIZE + nlength;
-	Ip_header.Ip_len = (unsigned short) htons(nlength);
+	Ip_header.Ip_len = (unsigned short)htons(nlength + IP_HEADER_SIZE);
 	memcpy(Ip_header.Ip_srcAddressByte, GetSrcIP(dev_num), 4);
+	Ip_header.Ip_checksum = htons(SetChecksum());
 
 	memcpy(Ip_header.Ip_data , ppayload , nlength);
 	BOOL bSuccess = mp_UnderLayer->Send((unsigned char*)&Ip_header , nlength, dev_num);
@@ -79,12 +119,16 @@ BOOL CIPLayer::Receive(unsigned char* ppayload,int dev_num)
 {
 	PIpHeader pFrame = (PIpHeader)ppayload;
 
-	if(!memcmp(&pFrame->Ip_srcAddressByte, GetSrcIP(dev_num), 4)) { //자신이 보낸 패킷은 버린다
+	if( !memcmp(&pFrame->Ip_srcAddressByte, GetSrcIP(dev_num), 4) ){ //자신이 보낸 패킷은 버린다
 		return FALSE;
 	}
-	else if (pFrame->Ip_protocol == 0x11)  // udp protocol (17) 확인
+	if( !IsValidChecksum(ppayload, ntohs(pFrame->Ip_checksum)) ){
+		return FALSE;
+	}
+
+	if (pFrame->Ip_protocol == 0x11)  // udp protocol (17) 확인
 	{ 
-		GetUpperLayer(0)->Receive((unsigned char *)pFrame->Ip_data, dev_num);
+		return GetUpperLayer(0)->Receive((unsigned char *)pFrame->Ip_data, dev_num);
 	}
 	/*else { // else 부분 수정 필요 ( RIP가 아닌 일반 ip 패킷일 때 어떻게 해야할지)
 		int dev = ((CRouterDlg *)GetUpperLayer(0))->Routing(pFrame->Ip_dstAddressByte);
@@ -94,7 +138,7 @@ BOOL CIPLayer::Receive(unsigned char* ppayload,int dev_num)
 			return TRUE;
 		}
 	}*/
-	return true;
+	return TRUE;
 }
 
 void CIPLayer::ResetHeader( )
