@@ -100,14 +100,13 @@ BOOL CIPLayer::IsValidChecksum(unsigned char* received_header, unsigned short ch
 }
 
 // ppayload == (unsigned char*)&Tcp_header
-BOOL CIPLayer::Send(unsigned char* ppayload, int nlength,int dev_num)
+BOOL CIPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 {
-	unsigned short checksum;
-
 	// IP 주소 셋팅은 Set 버튼을 눌렀을때 셋팅이 되었으므로 data와 전체 크기를 저장후 전송
 	nlength = IP_HEADER_SIZE + nlength;
-	Ip_header.Ip_len = (unsigned short)htons(nlength + IP_HEADER_SIZE);
+	Ip_header.Ip_len = (unsigned short)htons(nlength);
 	memcpy(Ip_header.Ip_srcAddressByte, GetSrcIP(dev_num), 4);
+	Ip_header.Ip_checksum = 0x0000;
 	Ip_header.Ip_checksum = htons(SetChecksum());
 
 	memcpy(Ip_header.Ip_data , ppayload , nlength);

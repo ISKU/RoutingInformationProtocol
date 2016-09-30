@@ -8,7 +8,6 @@ CARPLayer::CARPLayer(char *pName) : CBaseLayer(pName)
 	ResetMessage();
 	ResetMessageProxy();
 	buf_index = 0;
-	buf_size = 0;
 	out_index = 0;	
 	buf[0].valid = 0;
 	buf[1].valid = 1;
