@@ -72,7 +72,7 @@ BOOL CARPLayer::Send(unsigned char* ppayload, int nlength,int dev_num){
 
 BOOL CARPLayer::Receive(unsigned char* ppayload,int dev_num){
 	LPARP_Message receive_arp_message = (LPARP_Message)ppayload;
-	CRouterDlg* routerDlg =  ((CRouterDlg *)(GetUnderLayer()->GetUpperLayer(0)->GetUpperLayer(0)));
+	CRouterDlg * routerDlg =  ((CRouterDlg *)(GetUnderLayer()->GetUpperLayer(0)->GetUpperLayer(0)->GetUpperLayer(0)->GetUpperLayer(0)));
 	ResetMessage();
 
 	int index;
@@ -283,7 +283,7 @@ BOOL CARPLayer::ResetMessageProxy(){
 }
 
 void CARPLayer::updateCacheTable(){ //케쉬 테이블 업데이트 함수
-	CRouterDlg * routerDlg =  ((CRouterDlg *)(GetUnderLayer()->GetUpperLayer(0)->GetUpperLayer(0)));
+	CRouterDlg * routerDlg =  ((CRouterDlg *)(GetUnderLayer()->GetUpperLayer(0)->GetUpperLayer(0)->GetUpperLayer(0)->GetUpperLayer(0)));
 	routerDlg->ListBox_ARPCacheTable.DeleteAllItems(); //내용 초기화
 	CString ip,mac,time,type;
 	POSITION index;
@@ -305,7 +305,7 @@ void CARPLayer::updateCacheTable(){ //케쉬 테이블 업데이트 함수
 }
 
 void CARPLayer::updateProxyTable(){		
-	CRouterDlg* routerDlg =  ((CRouterDlg *)(GetUnderLayer()->GetUpperLayer(0)->GetUpperLayer(0)));
+	CRouterDlg * routerDlg =  ((CRouterDlg *)(GetUnderLayer()->GetUpperLayer(0)->GetUpperLayer(0)->GetUpperLayer(0)->GetUpperLayer(0)));
 	routerDlg->ListBox_ARPProxyTable.DeleteAllItems();
 	CString ip, mac, name;
 	POSITION index1;

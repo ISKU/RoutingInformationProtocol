@@ -31,6 +31,12 @@ void CIPLayer::SetSrcIP( unsigned char* ip ,int dev_num)
 	memcpy(&Ip_header.Ip_srcAddress,ip,4);
 }
 
+void CIPLayer::SetSrcIPForRIPLayer(unsigned char* ip, int dev_num){
+	if(dev_num == 1)
+		memcpy(dev_1_ip_addr_for_rip , ip , 4 );
+	else memcpy(dev_2_ip_addr_for_rip , ip , 4 );
+}
+
 unsigned char* CIPLayer::GetDstIP(int dev_num)
 {
 	if(dev_num == 1)
@@ -43,6 +49,12 @@ unsigned char* CIPLayer::GetSrcIP(int dev_num)
 	if(dev_num == 1)
 		return dev_1_ip_addr;
 	return dev_2_ip_addr;
+}
+
+unsigned char* CIPLayer::GetSrcIPForRIPLayer(int dev_num) {
+	if(dev_num == 1)
+		return dev_1_ip_addr_for_rip;
+	return dev_2_ip_addr_for_rip;
 }
 
 unsigned char CIPLayer::GetProtocol(int dev_num) {
@@ -125,6 +137,7 @@ BOOL CIPLayer::Receive(unsigned char* ppayload,int dev_num)
 	}
 	if (pFrame->Ip_protocol == 0x11)  // udp protocol (17) 확인
 	{ 
+		SetSrcIPForRIPLayer(pFrame->Ip_srcAddressByte, dev_num);
 		return GetUpperLayer(0)->Receive((unsigned char *)pFrame->Ip_data, dev_num);
 	}
 	/*else { // else 부분 수정 필요 ( RIP가 아닌 일반 ip 패킷일 때 어떻게 해야할지)
