@@ -116,13 +116,10 @@ BOOL CIPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 BOOL CIPLayer::Receive(unsigned char* ppayload,int dev_num)
 {
 	PIpHeader pFrame = (PIpHeader)ppayload;
-	unsigned short rec_checksum;
 
 	if( !memcmp(&pFrame->Ip_srcAddressByte, GetSrcIP(dev_num), 4) ){ //자신이 보낸 패킷은 버린다
 		return FALSE;
 	}
-
-	//rec_checksum = ntohs(pFrame->Ip_checksum);
 	if( !IsValidChecksum((unsigned char*)pFrame, ntohs(pFrame->Ip_checksum)) ){
 		return FALSE;
 	}
