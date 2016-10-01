@@ -48,8 +48,8 @@ void CUDPLayer::SetSendPseudoHeader(unsigned short length, int dev_num)
 {
 	CRouterDlg * routerDlg =  ((CRouterDlg *)GetUpperLayer(0)->GetUpperLayer(0));
 
-	memcpy(routerDlg->m_IPLayer->GetSrcIP(dev_num), Udp_pseudo_header.Pseudo_srcIp , 4);
-	memcpy(routerDlg->m_IPLayer->GetDstIP(dev_num), Udp_pseudo_header.Pseudo_dstIp , 4);
+	memcpy(Udp_pseudo_header.Pseudo_srcIp, routerDlg->m_IPLayer->GetSrcIP(dev_num), 4);
+	memcpy(Udp_pseudo_header.Pseudo_dstIp, routerDlg->m_IPLayer->GetDstIP(dev_num), 4);
 	Udp_pseudo_header.Pseudo_length = length;
 }
 
@@ -126,8 +126,8 @@ BOOL CUDPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 	routerDlg->m_IPLayer->SetProtocol(0x11, dev_num);
 
 	Udp_header.Udp_length = (unsigned short) htons(nlength);
-	SetSendPseudoHeader((unsigned short) htons(nlength), dev_num);
-	Udp_header.Udp_length = htons(SetChecksum(nlength));
+	SetSendPseudoHeader((unsigned short) nlength, dev_num);
+	Udp_header.Udp_checksum = (unsigned short) htons(SetChecksum(nlength));
 
 	BOOL bSuccess = mp_UnderLayer->Send((unsigned char*)&Udp_header, nlength, dev_num);
 	return bSuccess;
