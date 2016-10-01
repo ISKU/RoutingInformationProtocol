@@ -10,7 +10,7 @@ public:
 	unsigned char*	GetDstIP(int dev_num);
 	unsigned char*	GetSrcIP(int dev_num);
 	unsigned char	GetProtocol(int dev_num);
-	unsigned char* GetSrcIPForRIPLayer(int dev_num);
+	unsigned char*	GetSrcIPForRIPLayer(int dev_num);
 	unsigned short	SetChecksum();
 	BOOL			IsValidChecksum(unsigned char* received_header, unsigned short checksum);
 	void			SetDstIP( unsigned char* ip, int dev_num);
@@ -49,8 +49,8 @@ private:
 	unsigned char	dev_2_dst_ip_addr[4];
 	unsigned char	dev_1_protocol;
 	unsigned char	dev_2_protocol;
-	unsigned char dev_1_ip_addr_for_rip[4];
-	unsigned char dev_2_ip_addr_for_rip[4];
+	unsigned char	dev_1_ip_addr_for_rip[4];
+	unsigned char	dev_2_ip_addr_for_rip[4];
 	inline void		ResetHeader( );		// IP 헤더 초기화 함수
 	IpHeader		Ip_header;			// IP1 헤더 구조체 변수
  };
