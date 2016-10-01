@@ -1,6 +1,7 @@
 #pragma once
 #include "baselayer.h"
 #include "afxmt.h"
+
 class CNILayer : public CBaseLayer  
 {
 public:
@@ -17,6 +18,7 @@ public:
 	static unsigned int WaitPacket_1(LPVOID pParam);
 	static unsigned int WaitPacket_2(LPVOID pParam);
 	pcap_pkthdr *pkt_header[2];
+
 private:
 	pcap_if_t *DeviceList[2];
 	pcap_t *Device[2];	

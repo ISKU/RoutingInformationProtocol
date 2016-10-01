@@ -1,13 +1,16 @@
 #include "StdAfx.h"
 #include "UDPLayer.h"
 #include "RouterDlg.h"
+
 CUDPLayer::CUDPLayer(char* pName) : CBaseLayer(pName)
 {
 	ResetHeader();
 	ResetPseudoHeader();
 }
 
-CUDPLayer::~CUDPLayer() { }
+CUDPLayer::~CUDPLayer()
+{
+}
 
 unsigned short CUDPLayer::GetSrcPort()
 {
@@ -46,7 +49,7 @@ void CUDPLayer::SetLength(unsigned short length, int dev_num)
 
 void CUDPLayer::SetSendPseudoHeader(unsigned short length, int dev_num)
 {
-	CRouterDlg * routerDlg =  ((CRouterDlg *)GetUpperLayer(0)->GetUpperLayer(0));
+	CRouterDlg * routerDlg =  ((CRouterDlg *) GetUpperLayer(0)->GetUpperLayer(0));
 
 	memcpy(Udp_pseudo_header.Pseudo_srcIp, routerDlg->m_IPLayer->GetSrcIP(dev_num), 4);
 	memcpy(Udp_pseudo_header.Pseudo_dstIp, routerDlg->m_IPLayer->GetDstIP(dev_num), 4);
@@ -62,71 +65,76 @@ void CUDPLayer::SetReceivePseudoHeader(unsigned char* srcIp, unsigned char* dstI
 	Udp_pseudo_header.Pseudo_length = length;
 }
 
-unsigned short CUDPLayer::SetChecksum(int nlength){
-	unsigned char* p_pseudoheader = (unsigned char*)&Udp_pseudo_header;
-	unsigned char* p_udpheader = (unsigned char*)&Udp_header;
+unsigned short CUDPLayer::SetChecksum(int nlength) 
+{
+	unsigned char* p_pseudoheader = (unsigned char*) &Udp_pseudo_header;
+	unsigned char* p_udpheader = (unsigned char*) &Udp_header;
 	unsigned short word;
 	unsigned int sum = 0;
 	int i;
 
-	for(i = 0; i < UDP_PSEUDO_HEADER_SIZE; i = i+2){
+	for(i = 0; i < UDP_PSEUDO_HEADER_SIZE; i = i + 2) {
 		word = ((p_pseudoheader[i] << 8) & 0xFF00) + (p_pseudoheader[i+1] & 0xFF);
-		sum = sum + (unsigned int)word;
+		sum = sum + (unsigned int) word;
 	}
-	for(i = 0; i < nlength - (nlength%2); i = i+2){
+
+	for(i = 0; i < nlength - (nlength % 2); i = i + 2){
 		if(i == 6) continue;
 		word = ((p_udpheader[i] << 8) & 0xFF00) + (p_udpheader[i+1] & 0xFF);
-		sum = sum + (unsigned int)word;
+		sum = sum + (unsigned int) word;
 	}
-	if(nlength%2 == 1){
-		word = ((p_udpheader[nlength-1] << 8) & 0xFF00);
-		sum = sum + (unsigned int)word;
-	}
-	while(sum >> 16){
-		sum = (sum&0xFFFF) + (sum >> 16);
-	}
-	sum = ~sum;
 
-	return (unsigned short)sum;
+	if(nlength % 2 == 1) {
+		word = ((p_udpheader[nlength-1] << 8) & 0xFF00);
+		sum = sum + (unsigned int) word;
+	}
+
+	while(sum >> 16)
+		sum = (sum&0xFFFF) + (sum >> 16);
+
+	sum = ~sum;
+	return (unsigned short) sum;
 }
 
 BOOL CUDPLayer::IsValidChecksum(unsigned char* p_udpheader, unsigned short checksum, int nlength){
-	unsigned char* p_pseudoheader = (unsigned char*)&Udp_pseudo_header;
+	unsigned char* p_pseudoheader = (unsigned char*) &Udp_pseudo_header;
 	unsigned short word, ret;
 	unsigned int sum = 0;
 	int i;
-	
-	for(i = 0; i < UDP_PSEUDO_HEADER_SIZE; i = i+2){
+
+	for(i = 0; i < UDP_PSEUDO_HEADER_SIZE; i = i + 2) {
 		word = ((p_pseudoheader[i] << 8) & 0xFF00) + (p_pseudoheader[i+1] & 0xFF);
-		sum = sum + (unsigned int)word;
+		sum = sum + (unsigned int) word;
 	}
-	for(i = 0; i < nlength - (nlength%2); i = i+2){
+
+	for(i = 0; i < nlength - (nlength % 2); i = i + 2) {
 		if(i == 6) continue;
 		word = ((p_udpheader[i] << 8) & 0xFF00) + (p_udpheader[i+1] & 0xFF);
-		sum = sum + (unsigned int)word;
+		sum = sum + (unsigned int) word;
 	}
-	if(nlength%2 == 1){
+
+	if(nlength%2 == 1) {
 		word = ((p_udpheader[nlength-1] << 8) & 0xFF00);
-		sum = sum + (unsigned int)word;
+		sum = sum + (unsigned int) word;
 	}
-	while(sum >> 16){
+
+	while(sum >> 16)
 		sum = (sum&0xFFFF) + (sum >> 16);
-	}
-	
+
 	ret = sum & checksum;
-	return	ret == 0;
+	return ret == 0;
 }
 
 BOOL CUDPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 {
-	CRouterDlg * routerDlg =  ((CRouterDlg *)GetUpperLayer(0)->GetUpperLayer(0));
+	CRouterDlg * routerDlg =  ((CRouterDlg *) GetUpperLayer(0)->GetUpperLayer(0));
 
 	memcpy(Udp_header.Udp_data, ppayload, nlength);
 	nlength = UDP_HEADER_SIZE + nlength;
 	routerDlg->m_IPLayer->SetProtocol(0x11, dev_num);
 
 	Udp_header.Udp_length = (unsigned short) htons(nlength);
-	SetSendPseudoHeader((unsigned short) nlength, dev_num);
+	SetSendPseudoHeader((unsigned short) htons(nlength), dev_num);
 	Udp_header.Udp_checksum = (unsigned short) htons(SetChecksum(nlength));
 
 	BOOL bSuccess = mp_UnderLayer->Send((unsigned char*)&Udp_header, nlength, dev_num);
@@ -138,14 +146,14 @@ BOOL CUDPLayer::Receive(unsigned char* ppayload, int dev_num)
 	PUdpHeader pFrame = (PUdpHeader) ppayload;
 	BOOL bSuccess;
 
-	if ( !IsValidChecksum((unsigned char*)pFrame, ntohs(pFrame->Udp_checksum), ntohs(pFrame->Udp_length)) ) {
+	if ( !IsValidChecksum((unsigned char*) pFrame, ntohs(pFrame->Udp_checksum), ntohs(pFrame->Udp_length))) 
 		return FALSE;
-	}
 
 	if (pFrame->Udp_dstPort == 0x0802) { // check dst port 520
 		SetLength((unsigned short) htons(pFrame->Udp_length), dev_num);
-		bSuccess = GetUpperLayer(0)->Receive((unsigned char *)pFrame->Udp_data, dev_num);
+		bSuccess = GetUpperLayer(0)->Receive((unsigned char *) pFrame->Udp_data, dev_num);
 	}
+
 	return bSuccess;
 }
 

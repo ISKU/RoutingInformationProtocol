@@ -1,16 +1,11 @@
-// RoutTableAdder.cpp : 구현 파일입니다.
-//
-
 #include "stdafx.h"
 #include "Router.h"
 #include "RoutTableAdder.h"
-// CRoutTableAdder 대화 상자입니다.
 
+// CRoutTableAdder 대화 상자입니다.
 IMPLEMENT_DYNAMIC(CRoutTableAdder, CDialog)
 
-CRoutTableAdder::CRoutTableAdder()
-	: CDialog(CRoutTableAdder::IDD, NULL)
-	, m_metric(0)
+	CRoutTableAdder::CRoutTableAdder() : CDialog(CRoutTableAdder::IDD, NULL), m_metric(0)
 {
 }
 
@@ -34,12 +29,10 @@ void CRoutTableAdder::DoDataExchange(CDataExchange* pDX)
 	m_add_interface.SetCurSel(0);
 }
 
-
 BEGIN_MESSAGE_MAP(CRoutTableAdder, CDialog)
 	ON_BN_CLICKED(IDOK, &CRoutTableAdder::OnBnClickedOk)
 	ON_BN_CLICKED(IDCANCEL, &CRoutTableAdder::OnBnClickedCancel)
 END_MESSAGE_MAP()
-
 
 // CRoutTableAdder 메시지 처리기입니다.
 void CRoutTableAdder::OnBnClickedOk()
@@ -55,16 +48,16 @@ void CRoutTableAdder::OnBnClickedOk()
 
 	m_gateway.GetWindowText(buffer, sizeof(buffer));
 	sscanf(buffer, "%d.%d.%d.%d", &gate_ip[0], &gate_ip[1], &gate_ip[2], &gate_ip[3], sizeof(buffer));
-	
+
 	router_interface = m_add_interface.GetCurSel();
 
 	flag = 0x00;
 	if(m_flag_u.GetCheck())
-		flag = flag | 0x01;
+	flag = flag | 0x01;
 	if(m_flag_g.GetCheck())
-		flag = flag | 0x02;
+	flag = flag | 0x02;
 	if(m_flag_h.GetCheck())
-		flag = flag | 0x04;
+	flag = flag | 0x04;
 
 	CDialog::OnOK();
 	*/
@@ -76,7 +69,7 @@ void CRoutTableAdder::OnBnClickedCancel()
 	OnCancel();
 }
 
-unsigned char * CRoutTableAdder::GetIPAddress(void)
+unsigned char* CRoutTableAdder::GetIPAddress(void)
 {
 	return table_ipAddress;
 }
@@ -86,12 +79,13 @@ unsigned int CRoutTableAdder::GetMetric(void)
 	return table_metric;
 }
 
-unsigned char * CRoutTableAdder::GetInterface(void)
+unsigned char* CRoutTableAdder::GetInterface(void)
 {
 	return table_interface;
 }
 
-void CRoutTableAdder::setDeviceList(CString dev1,CString dev2){
+void CRoutTableAdder::setDeviceList(CString dev1,CString dev2)
+{
 	d1 = dev1;
 	d2 = dev2;
 }

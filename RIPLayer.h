@@ -11,22 +11,21 @@ public:
 	BOOL Receive(unsigned char* ppayload, int dev_num);
 
 public:
-
 	typedef struct _RIPTable {
-		unsigned short		Rip_family;
-		unsigned short		Rip_tag;
-		unsigned char		Rip_ipAddress[4];
-		unsigned char		Rip_subnetmask[4];
-		unsigned char		Rip_nexthop[4];
-		unsigned int		Rip_metric;
-	}RipTable, *PRipTable;
+		unsigned short Rip_family;
+		unsigned short Rip_tag;
+		unsigned char Rip_ipAddress[4];
+		unsigned char Rip_subnetmask[4];
+		unsigned char Rip_nexthop[4];
+		unsigned int Rip_metric;
+	} RipTable, *PRipTable;
 
 	typedef struct _RIP {
-		unsigned char		Rip_command;
-		unsigned char		Rip_version;
-		unsigned short		Rip_reserved;
-		RipTable			Rip_table[25];
-	}RipHeader, *PRipHeader;
+		unsigned char Rip_command;
+		unsigned char Rip_version;
+		unsigned short Rip_reserved;
+		RipTable Rip_table[25];
+	} RipHeader, *PRipHeader;
 
 private:
 	unsigned char dev_1_udp_addr[4];
@@ -35,8 +34,6 @@ private:
 	inline void CreateRequestMessage();
 	inline void CreateResponseMessageTable();
 
-	// MH: Search Route Table
 	int ContainsRouteTableEntry(unsigned char Ip_addr[4]);
-
 	RipHeader Rip_header;
 };
