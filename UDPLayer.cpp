@@ -126,7 +126,7 @@ BOOL CUDPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 	routerDlg->m_IPLayer->SetProtocol(0x11, dev_num);
 
 	Udp_header.Udp_length = (unsigned short) htons(nlength);
-	SetSendPseudoHeader((unsigned short) nlength, dev_num);
+	SetSendPseudoHeader((unsigned short) htons(nlength), dev_num);
 	Udp_header.Udp_checksum = (unsigned short) htons(SetChecksum(nlength));
 
 	BOOL bSuccess = mp_UnderLayer->Send((unsigned char*)&Udp_header, nlength, dev_num);

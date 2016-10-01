@@ -138,7 +138,7 @@ BOOL CIPLayer::Receive(unsigned char* ppayload,int dev_num)
 	if (pFrame->Ip_protocol == 0x11)  // udp protocol (17) 확인
 	{ 
 		SetSrcIPForRIPLayer(pFrame->Ip_srcAddressByte, dev_num);
-		((CUDPLayer*)GetUpperLayer(0))->SetReceivePseudoHeader( pFrame->Ip_srcAddressByte, pFrame->Ip_dstAddressByte, (unsigned short)ntohs(pFrame->Ip_len) - IP_HEADER_SIZE );
+		((CUDPLayer*)GetUpperLayer(0))->SetReceivePseudoHeader( pFrame->Ip_srcAddressByte, pFrame->Ip_dstAddressByte, (unsigned short)htons(ntohs(pFrame->Ip_len) - IP_HEADER_SIZE) );
 		return GetUpperLayer(0)->Receive((unsigned char *)pFrame->Ip_data, dev_num);
 	}
 	/*else { // else 부분 수정 필요 ( RIP가 아닌 일반 ip 패킷일 때 어떻게 해야할지)
