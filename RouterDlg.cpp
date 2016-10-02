@@ -68,7 +68,6 @@ CRouterDlg::CRouterDlg(CWnd* pParent /*=NULL*/)
 	m_EthernetLayer->SetUpperLayer(m_ARPLayer);
 	m_EthernetLayer->SetUnderLayer(m_NILayer);
 	m_ARPLayer->SetUnderLayer(m_EthernetLayer);
-	m_ARPLayer->SetUpperLayer(m_IPLayer);
 	m_IPLayer->SetUpperLayer(m_UDPLayer);
 	m_IPLayer->SetUnderLayer(m_ARPLayer);
 	m_UDPLayer->SetUpperLayer(m_RIPLayer);

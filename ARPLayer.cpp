@@ -66,7 +66,7 @@ BOOL CARPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 	return ((CEthernetLayer*)this->mp_UnderLayer)->Send((unsigned char *) &arp_message, ARP_MESSAGE_SIZE, arp_type, dev_num); //arp message
 }
 
-BOOL CARPLayer::Receive(unsigned char* ppayload,int dev_num){
+BOOL CARPLayer::Receive(unsigned char* ppayload,int dev_num) {
 	LPARP_Message receive_arp_message = (LPARP_Message)ppayload;
 	CRouterDlg * routerDlg =  ((CRouterDlg *)(GetUnderLayer()->GetUpperLayer(0)->GetUpperLayer(0)->GetUpperLayer(0)->GetUpperLayer(0)));
 	ResetMessage();
@@ -78,14 +78,14 @@ BOOL CARPLayer::Receive(unsigned char* ppayload,int dev_num){
 				POSITION pos = Proxy_Table.FindIndex(index);
 				PROXY_ENTRY entry = Proxy_Table.GetAt(pos);
 				proxy_arp_message.arp_op = reply;
-				memcpy(proxy_arp_message.arp_desthdaddr, receive_arp_message->arp_srcprotoaddr, 4);
+				memcpy(proxy_arp_message.arp_destprotoaddr, receive_arp_message->arp_srcprotoaddr, 4);
 				memcpy(proxy_arp_message.arp_desthdaddr, receive_arp_message->arp_srchaddr, 6);
 				memcpy(proxy_arp_message.arp_srchaddr, routerDlg->m_EthernetLayer->GetSourceAddress(dev_num), 6);
 				memcpy(proxy_arp_message.arp_srcprotoaddr, entry.Ip_addr, 4); //proxy 값을 넣고 전송시켜줌
 				routerDlg->m_EthernetLayer->Send((unsigned char *) &proxy_arp_message, ARP_MESSAGE_SIZE, arp_type,dev_num);
 			}
 
-			if((index = SearchIpAtTable(receive_arp_message->arp_srcprotoaddr)) != -1) { //cache table에 존재할 경우 갱신
+			if((index = SearchIpAtTable(receive_arp_message->arp_srcprotoaddr)) != -1) { //cache table에 존재할 경우 갱신, 그리고 Reply 보내지 않음
 				//해당 entry를 찾아 값 수정
 				POSITION pos = Cache_Table.FindIndex(index);
 				Cache_Table.GetAt(pos).cache_ttl = 1200;
@@ -102,14 +102,13 @@ BOOL CARPLayer::Receive(unsigned char* ppayload,int dev_num){
 				InsertCache(Cache_entry);
 			}
 		}
-		else{ //자신의 ip로 온 경우
+		else{ //자신의 ip로 온 경우 Update하고 Reply
 			if(memcmp(receive_arp_message->arp_srchaddr, routerDlg->m_EthernetLayer->GetSourceAddress(dev_num), 6) == 0)
-				return FALSE;	//destmac == srcmac일경우(자기자신전송), 자기자신 전송이므로 무시한다.
+				return FALSE;	//자기자신 전송이므로 무시
 
-			//srcmac이 다른 컴퓨터일 경우
-			//ResetMessage(); //Message리셋
+			// srcmac이 다른 컴퓨터일 경우
 			if(!memcmp(receive_arp_message->arp_srcprotoaddr, routerDlg->m_IPLayer->GetSrcIP(dev_num), 4)) //자신의 ip와 보내는 쪽 srcIP가 같은 경우 충돌
-				AfxMessageBox(_T("IP충돌 입니다."), 0, 0);
+				AfxMessageBox("IP충돌 입니다.", 0, 0);
 
 			if((index = SearchIpAtTable(receive_arp_message->arp_srcprotoaddr)) != -1) { //table에존재할 경우
 				//해당 entry를 찾아 값 수정
@@ -129,7 +128,7 @@ BOOL CARPLayer::Receive(unsigned char* ppayload,int dev_num){
 				InsertCache(Cache_entry);
 			}
 
-			//replay메시지를 보내줌
+			// Send reply message
 			arp_message.arp_op = reply;
 			memcpy(arp_message.arp_srchaddr, routerDlg->m_EthernetLayer->GetSourceAddress(dev_num), 6); //보내는 사람mac주소
 			memcpy(arp_message.arp_srcprotoaddr, routerDlg->m_IPLayer->GetSrcIP(dev_num), 4); //보내는 사람ip주소
@@ -142,6 +141,7 @@ BOOL CARPLayer::Receive(unsigned char* ppayload,int dev_num){
 	} else if(receive_arp_message->arp_op == reply){ //응답
 		if(!memcmp(receive_arp_message->arp_srcprotoaddr,routerDlg->m_IPLayer->GetSrcIP(dev_num),4)) //자신의 ip = 발송자 ip의경우
 			AfxMessageBox("Ip충돌입니다.",0,0);
+
 		else { //자신의 ip != 발송자 ip
 			//arp_message 초기화 및 설정
 			LPCACHE_ENTRY Cache_entry; //table 에 insert할 cache
@@ -161,6 +161,7 @@ BOOL CARPLayer::Receive(unsigned char* ppayload,int dev_num){
 			} else //존재하지 않을경우 테이블에 삽입
 				InsertCache(Cache_entry); //cache insert
 
+			// 얻은 Mac 주소를 통해 Buffer에 저장했던 data를 Send
 			while(buf[out_index].valid == 1 && !memcmp(buf[out_index].dest_ip, receive_arp_message->arp_srcprotoaddr, 4)) { 
 				//버퍼의자료 send
 				routerDlg->m_EthernetLayer->SetDestinAddress(receive_arp_message->arp_srchaddr, dev_num);
@@ -340,7 +341,6 @@ void CARPLayer::decreaseTime()
 			if(ttl <= 0) // 삭제
 				Cache_Table.RemoveAt(index);
 		}
-
 		updateCacheTable();
 	}
 }
