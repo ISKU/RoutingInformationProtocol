@@ -1,6 +1,3 @@
-// Router.cpp : 응용 프로그램에 대한 클래스 동작을 정의합니다.
-//
-
 #include "stdafx.h"
 #include "Router.h"
 #include "RouterDlg.h"
@@ -9,30 +6,20 @@
 #define new DEBUG_NEW
 #endif
 
-
 // CRouterApp
-
 BEGIN_MESSAGE_MAP(CRouterApp, CWinApp)
 	ON_COMMAND(ID_HELP, &CWinApp::OnHelp)
 END_MESSAGE_MAP()
 
-
 // CRouterApp 생성
-
 CRouterApp::CRouterApp()
 {
-	// TODO: 여기에 생성 코드를 추가합니다.
-	// InitInstance에 모든 중요한 초기화 작업을 배치합니다.
 }
 
-
 // 유일한 CRouterApp 개체입니다.
-
 CRouterApp theApp;
 
-
 // CRouterApp 초기화
-
 BOOL CRouterApp::InitInstance()
 {
 	// 응용 프로그램 매니페스트가 ComCtl32.dll 버전 6 이상을 사용하여 비주얼 스타일을
@@ -46,7 +33,6 @@ BOOL CRouterApp::InitInstance()
 	InitCommonControlsEx(&InitCtrls);
 
 	CWinApp::InitInstance();
-
 	// 표준 초기화
 	// 이들 기능을 사용하지 않고 최종 실행 파일의 크기를 줄이려면
 	// 아래에서 필요 없는 특정 초기화
@@ -59,13 +45,11 @@ BOOL CRouterApp::InitInstance()
 	CRouterDlg dlg;
 	m_pMainWnd = &dlg;
 	INT_PTR nResponse = dlg.DoModal();
-	if (nResponse == IDOK)
-	{
+	if (nResponse == IDOK) {
 		// TODO: 여기에 [확인]을 클릭하여 대화 상자가 없어질 때 처리할
 		//  코드를 배치합니다.
 	}
-	else if (nResponse == IDCANCEL)
-	{
+	else if (nResponse == IDCANCEL) {
 		// TODO: 여기에 [취소]를 클릭하여 대화 상자가 없어질 때 처리할
 		//  코드를 배치합니다.
 	}

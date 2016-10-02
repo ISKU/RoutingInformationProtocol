@@ -3,15 +3,13 @@
 #include "afxcmn.h"
 #include "Router.h"
 
-
 // ProxyTableAdder dialog
-
 class ProxyTableAdder : public CDialog
 {
 	DECLARE_DYNAMIC(ProxyTableAdder)
 
 public:
-	ProxyTableAdder(CWnd* pParent = NULL);   // standard constructor
+	ProxyTableAdder(CWnd* pParent = NULL); // standard constructor
 	virtual ~ProxyTableAdder();
 
 	CString name;
@@ -20,15 +18,14 @@ public:
 	char Buffer[16];
 	char Buffer1[18];
 
-// Dialog Data
+	// Dialog Data
 	enum { IDD = IDD_PROXY };
 
 protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-
+	virtual void DoDataExchange(CDataExchange* pDX); // DDX/DDV support
 	DECLARE_MESSAGE_MAP()
-public:
 
+public:
 	CComboBox m_Nic_Name;
 	CIPAddressCtrl m_ip;
 	CListBox m_mac;
