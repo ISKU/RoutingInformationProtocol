@@ -32,7 +32,7 @@ private:
 	unsigned char dev_2_udp_addr[4];
 	inline void	ResetHeader();
 	inline void CreateRequestMessage();
-	inline void CreateResponseMessageTable();
+	inline int CreateResponseMessageTable(int dev_num);
 
 	int ContainsRouteTableEntry(unsigned char Ip_addr[4]);
 	RipHeader Rip_header;

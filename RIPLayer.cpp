@@ -25,20 +25,27 @@ BOOL CRIPLayer::Send(int command, int dev_num, int resend)
 		Rip_header.Rip_command = 0x01;
 		CreateRequestMessage();
 		messageLength = 20; // Request 인 경우에는 한개만
+	
+		
+		routerDlg->m_EthernetLayer->SetDestinAddress(macbroadcast, dev_num);
+		if(resend == 0)
+			routerDlg->m_IPLayer->SetDstIP(broadcast, dev_num);
+		routerDlg->m_UDPLayer->SetSrcPort(0x0802); // 520(UDP)
+		return mp_UnderLayer->Send((unsigned char*) &Rip_header, RIP_HEADER_SIZE + messageLength, dev_num);
 	}
 
 	if (command == 2) {
 		Rip_header.Rip_command = 0x02;
-		CreateResponseMessageTable();
-		messageLength = CRouterDlg::route_table.GetSize() * 20; // Response인 경우에는 Routing table의 Entry 개수만큼 (4Byte * 5줄)
+		messageLength = CreateResponseMessageTable(dev_num) * 20;// Response인 경우에는 Routing table의 Entry 개수만큼 (4Byte * 5줄)
+	
+		routerDlg->m_EthernetLayer->SetDestinAddress(macbroadcast, dev_num);
+		if(resend == 0)
+			routerDlg->m_IPLayer->SetDstIP(broadcast, dev_num);
+		routerDlg->m_UDPLayer->SetSrcPort(0x0802); // 520(UDP)
+		BOOL bSuccess = mp_UnderLayer->Send((unsigned char*) &Rip_header, RIP_HEADER_SIZE + messageLength, dev_num);
 	}
 
-	routerDlg->m_EthernetLayer->SetDestinAddress(macbroadcast, dev_num);
-	if(resend == 0)
-		routerDlg->m_IPLayer->SetDstIP(broadcast, dev_num);
-	routerDlg->m_UDPLayer->SetSrcPort(0x0802); // 520(UDP)
-	BOOL bSuccess = mp_UnderLayer->Send((unsigned char*) &Rip_header, RIP_HEADER_SIZE + messageLength, dev_num);
-	return bSuccess;
+	return false;
 }
 
 BOOL CRIPLayer::Receive(unsigned char* ppayload, int dev_num)
@@ -51,7 +58,7 @@ BOOL CRIPLayer::Receive(unsigned char* ppayload, int dev_num)
 	// 받은 Packet에서 RIP Message에 실린 Entry의 길이(UDP 전체 길이에서 UDP header(8), RIP 맨 윗줄(4) 를 빼줌)
 	unsigned short length = routerDlg->m_UDPLayer->GetLength(dev_num) - 12;
 
-	if (pFrame->Rip_command == 0x01){ // command : Request를 받은 경우, command를 Response로 변경하여 다시 보냄
+	if (pFrame->Rip_command == 0x01) { // command : Request를 받은 경우, command를 Response로 변경하여 다시 보냄
 		routerDlg->m_IPLayer->SetDstIP(routerDlg->m_IPLayer->GetSrcIPForRIPLayer(dev_num),dev_num);
 		Send(2, dev_num , 1);
 	}
@@ -112,21 +119,27 @@ void CRIPLayer::CreateRequestMessage()
 	Rip_header.Rip_table[0].Rip_metric = htonl(16); // Default metric : 16
 }
 
-void CRIPLayer::CreateResponseMessageTable()
+int CRIPLayer::CreateResponseMessageTable(int dev_num)
 {
 	CRouterDlg::RoutingTable entry;
 	int entries = CRouterDlg::route_table.GetCount();
+	int length = 0; 
 
 	for (int index = 0; index < entries; index++) {
 		entry = CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(index));
 
-		Rip_header.Rip_table[index].Rip_family = 0x0200;
-		Rip_header.Rip_table[index].Rip_tag = 0x0100;
-		memcpy(Rip_header.Rip_table[index].Rip_ipAddress, entry.ipAddress, 4);
-		memset(Rip_header.Rip_table[index].Rip_subnetmask, 0, 4);
-		memset(Rip_header.Rip_table[index].Rip_nexthop, 0, 4);
-		Rip_header.Rip_table[index].Rip_metric = htonl(entry.metric + 1); // Metric을 1증가 시켜줌
+		if (entry.out_interface != dev_num) {
+			Rip_header.Rip_table[index].Rip_family = 0x0200;
+			Rip_header.Rip_table[index].Rip_tag = 0x0100;
+			memcpy(Rip_header.Rip_table[index].Rip_ipAddress, entry.ipAddress, 4);
+			memset(Rip_header.Rip_table[index].Rip_subnetmask, 0, 4);
+			memset(Rip_header.Rip_table[index].Rip_nexthop, 0, 4);
+			Rip_header.Rip_table[index].Rip_metric = htonl(entry.metric + 1); // Metric을 1증가 시켜줌
+			length++;
+		}
 	}
+
+	return length;
 }
 
 // Route Table에 해당 Entry가 존재하는지 확인, index를 반환한다.
