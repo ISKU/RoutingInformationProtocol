@@ -139,8 +139,9 @@ BOOL CRouterDlg::OnInitDialog()
 	// ListBox에 초기 Colum을 삽입
 	ListBox_RoutingTable.InsertColumn(0, _T(" "), LVCFMT_CENTER, 20, -1);
 	ListBox_RoutingTable.InsertColumn(1,_T("IP Address"),LVCFMT_CENTER,175,-1);
-	ListBox_RoutingTable.InsertColumn(2,_T("Metric"),LVCFMT_CENTER,166,-1);
-	ListBox_RoutingTable.InsertColumn(3,_T("Interface"),LVCFMT_CENTER,175,-1);
+	ListBox_RoutingTable.InsertColumn(2,_T("Metric"),LVCFMT_CENTER, 86,-1);
+	ListBox_RoutingTable.InsertColumn(3,_T("Interface"),LVCFMT_CENTER, 80,-1);
+	ListBox_RoutingTable.InsertColumn(4,_T("Next Hop"),LVCFMT_CENTER, 175,-1);
 
 	ListBox_ARPCacheTable.InsertColumn(0,_T("IP address"),LVCFMT_CENTER,100,-1);
 	ListBox_ARPCacheTable.InsertColumn(1,_T("Mac address"),LVCFMT_CENTER,120,-1);
@@ -309,15 +310,21 @@ void CRouterDlg::OnBnClickedNicSetButton()
 	m_nic2_ip.GetAddress((BYTE &)nic2_ip[0],(BYTE &)nic2_ip[1],(BYTE &)nic2_ip[2],(BYTE &)nic2_ip[3]);
 
 	// 자기 자신의 라우팅 정보 업데이트
+	unsigned char netmask[4] = { 0xff, 0xff, 0xff , 0 };
+	
 	RoutingTable rt1;
-	memcpy(&rt1.ipAddress, nic1_ip, 4);
+	for(int i=0; i<4; i++)
+		rt1.ipAddress[i] = nic1_ip[i] & netmask[i];
 	rt1.metric = 0x0;
-	memcpy(&rt1.dstInterface, nic1_ip, 4);
+	rt1.out_interface = 1;
+	memset(&rt1.nexthop, 0, 4);
 
 	RoutingTable rt2;
-	memcpy(&rt2.ipAddress, nic2_ip, 4);
+	for(int i=0; i<4; i++)
+		rt2.ipAddress[i] = nic2_ip[i] & netmask[i];
 	rt2.metric = 0x0;
-	memcpy(&rt2.dstInterface, nic2_ip, 4);
+	rt2.out_interface = 2;
+	memset(&rt2.nexthop, 0, 4);
 
 	route_table.AddTail(rt1);
 	route_table.AddTail(rt2);
@@ -416,7 +423,7 @@ memcpy(&rt.Interface, dstInterface, 4);
 void CRouterDlg::UpdateRouteTable()
 {
 	RoutingTable entry;
-	CString tableNumber, ipAddress, metric, dstInterface;
+	CString tableNumber, ipAddress, metric, out_interface, nexthop;
 	int size = route_table.GetCount();
 
 	// dev_num으로 구분하여 interface에 해당하는 route_table을 사용하여 CList에 있는 entry를 모두 레이아웃에 추가한다!
@@ -428,12 +435,14 @@ void CRouterDlg::UpdateRouteTable()
 		tableNumber.Format("%d", index + 1);
 		ipAddress.Format("%d.%d.%d.%d", entry.ipAddress[0], entry.ipAddress[1], entry.ipAddress[2], entry.ipAddress[3]);
 		metric.Format("%d", entry.metric);
-		dstInterface.Format("%d.%d.%d.%d", entry.dstInterface[0], entry.dstInterface[1], entry.dstInterface[2], entry.dstInterface[3]);
+		out_interface.Format("%d", entry.out_interface);
+		nexthop.Format("%d.%d.%d.%d", entry.nexthop[0], entry.nexthop[1], entry.nexthop[2], entry.nexthop[3]);
 
 		ListBox_RoutingTable.InsertItem(index, tableNumber);
 		ListBox_RoutingTable.SetItem(index, 1, LVIF_TEXT, ipAddress, 0, 0, 0, NULL);
 		ListBox_RoutingTable.SetItem(index, 2, LVIF_TEXT, metric, 0, 0, 0, NULL);
-		ListBox_RoutingTable.SetItem(index, 3, LVIF_TEXT, dstInterface, 0, 0, 0, NULL);
+		ListBox_RoutingTable.SetItem(index, 3, LVIF_TEXT, out_interface, 0, 0, 0, NULL);
+		ListBox_RoutingTable.SetItem(index, 4, LVIF_TEXT, nexthop, 0, 0, 0, NULL);
 		ListBox_RoutingTable.UpdateWindow();
 	}
 }

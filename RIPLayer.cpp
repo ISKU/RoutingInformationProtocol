@@ -43,9 +43,10 @@ BOOL CRIPLayer::Send(int command, int dev_num, int resend)
 
 BOOL CRIPLayer::Receive(unsigned char* ppayload, int dev_num)
 {
-	CRouterDlg::RoutingTable entry;
 	CRouterDlg* routerDlg = ((CRouterDlg *) GetUpperLayer(0));
 	PRipHeader pFrame = (PRipHeader) ppayload;
+	unsigned char netmask[4] = { 0xff, 0xff, 0xff , 0 };
+
 
 	// 받은 Packet에서 RIP Message에 실린 Entry의 길이(UDP 전체 길이에서 UDP header(8), RIP 맨 윗줄(4) 를 빼줌)
 	unsigned short length = routerDlg->m_UDPLayer->GetLength(dev_num) - 12;
@@ -67,25 +68,23 @@ BOOL CRIPLayer::Receive(unsigned char* ppayload, int dev_num)
 				entry = CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(selectIndex));
 				
 				/* routerDlg->m_IPLayer->GetSrcIP(2) : 이 부분이 next-hop을 나타내는 것인가? 확인할 것 !!! */
-				if (!memcmp((unsigned char*) routerDlg->m_IPLayer->GetSrcIP(2), pFrame->Rip_table[index].Rip_nexthop, 4)) { // next-hop이 같은 경우
-					memcpy(&entry.ipAddress, pFrame->Rip_table[index].Rip_ipAddress, 4);
+				if (!memcmp((unsigned char*) routerDlg->m_IPLayer->GetSrcIP(dev_num), pFrame->Rip_table[index].Rip_nexthop, 4)) { // next-hop이 같은 경우
 					entry.metric = metric;
-					memcpy(&entry.dstInterface, routerDlg->m_IPLayer->GetSrcIP(dev_num), 4);
 					CRouterDlg::route_table.SetAt(CRouterDlg::route_table.FindIndex(selectIndex), entry);
 				} else { // next-hop이 다른 경우
 					if (metric < entry.metric) { // 새로운 metric수가 더 작으면 그걸로 Update
-						memcpy(&entry.ipAddress, pFrame->Rip_table[index].Rip_ipAddress, 4);
 						entry.metric = metric;
-						memcpy(&entry.dstInterface, routerDlg->m_IPLayer->GetSrcIP(dev_num), 4);
+						memcpy(&entry.nexthop, routerDlg->m_IPLayer->GetSrcIPForRIPLayer(dev_num), 4);
 						CRouterDlg::route_table.SetAt(CRouterDlg::route_table.FindIndex(selectIndex), entry);
 					} else { // 이미 존재하던 metric수가 더 작으면 그대로 둠
 						;
 					}
 				}
 			} else { // 해당 IP가 존재하지 않으면 그대로 Routing table에 추가
-				memcpy(&entry.ipAddress, pFrame->Rip_table[index].Rip_ipAddress, 4);
+				for(int i = 0; i < 4; i++)
+					entry.ipAddress[i] = pFrame->Rip_table[index].Rip_ipAddress[i] & netmask[i];
 				entry.metric = metric;
-				memcpy(&entry.dstInterface, routerDlg->m_IPLayer->GetSrcIP(dev_num), 4);
+				memcpy(&entry.nexthop, routerDlg->m_IPLayer->GetSrcIPForRIPLayer(dev_num), 4);
 				CRouterDlg::route_table.AddTail(entry);
 			}
 		}

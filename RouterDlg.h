@@ -54,7 +54,8 @@ public:
 	typedef struct _RoutingTable {
 		unsigned char	ipAddress[4];
 		unsigned int	metric;
-		unsigned char	dstInterface[4];
+		unsigned char	out_interface;
+		unsigned char	nexthop[4];
 	} RoutingTable, *RoutingTablePtr;
 
 	static CList<RoutingTable, RoutingTable&> route_table;
