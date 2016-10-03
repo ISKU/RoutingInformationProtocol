@@ -144,7 +144,7 @@ BOOL CUDPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 BOOL CUDPLayer::Receive(unsigned char* ppayload, int dev_num)
 {
 	PUdpHeader pFrame = (PUdpHeader) ppayload;
-	BOOL bSuccess;
+	BOOL bSuccess = FALSE;
 
 	if ( !IsValidChecksum((unsigned char*) pFrame, ntohs(pFrame->Udp_checksum), ntohs(pFrame->Udp_length))) 
 		return FALSE;
