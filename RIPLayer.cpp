@@ -26,7 +26,6 @@ BOOL CRIPLayer::Send(int command, int dev_num, int resend)
 		CreateRequestMessage();
 		messageLength = 20; // Request 인 경우에는 한개만
 	
-		
 		routerDlg->m_EthernetLayer->SetDestinAddress(macbroadcast, dev_num);
 		if(resend == 0)
 			routerDlg->m_IPLayer->SetDstIP(broadcast, dev_num);
@@ -54,12 +53,11 @@ BOOL CRIPLayer::Receive(unsigned char* ppayload, int dev_num)
 	PRipHeader pFrame = (PRipHeader) ppayload;
 	unsigned char netmask[4] = { 0xff, 0xff, 0xff , 0 };
 
-
 	// 받은 Packet에서 RIP Message에 실린 Entry의 길이(UDP 전체 길이에서 UDP header(8), RIP 맨 윗줄(4) 를 빼줌)
 	unsigned short length = routerDlg->m_UDPLayer->GetLength(dev_num) - 12;
 
 	if (pFrame->Rip_command == 0x01) { // command : Request를 받은 경우, command를 Response로 변경하여 다시 보냄
-		routerDlg->m_IPLayer->SetDstIP(routerDlg->m_IPLayer->GetSrcIPForRIPLayer(dev_num),dev_num);
+		routerDlg->m_IPLayer->SetDstIP(routerDlg->m_IPLayer->GetSrcIPForRIPLayer(dev_num), dev_num);
 		Send(2, dev_num , 1);
 	}
 
@@ -91,6 +89,7 @@ BOOL CRIPLayer::Receive(unsigned char* ppayload, int dev_num)
 				for(int i = 0; i < 4; i++)
 					entry.ipAddress[i] = pFrame->Rip_table[index].Rip_ipAddress[i] & netmask[i];
 				entry.metric = metric;
+				entry.out_interface = dev_num;
 				memcpy(&entry.nexthop, routerDlg->m_IPLayer->GetSrcIPForRIPLayer(dev_num), 4);
 				CRouterDlg::route_table.AddTail(entry);
 			}
@@ -129,12 +128,12 @@ int CRIPLayer::CreateResponseMessageTable(int dev_num)
 		entry = CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(index));
 
 		if (entry.out_interface != dev_num) {
-			Rip_header.Rip_table[index].Rip_family = 0x0200;
-			Rip_header.Rip_table[index].Rip_tag = 0x0100;
-			memcpy(Rip_header.Rip_table[index].Rip_ipAddress, entry.ipAddress, 4);
-			memset(Rip_header.Rip_table[index].Rip_subnetmask, 0, 4);
-			memset(Rip_header.Rip_table[index].Rip_nexthop, 0, 4);
-			Rip_header.Rip_table[index].Rip_metric = htonl(entry.metric + 1); // Metric을 1증가 시켜줌
+			Rip_header.Rip_table[length].Rip_family = 0x0200;
+			Rip_header.Rip_table[length].Rip_tag = 0x0100;
+			memcpy(Rip_header.Rip_table[length].Rip_ipAddress, entry.ipAddress, 4);
+			memset(Rip_header.Rip_table[length].Rip_subnetmask, 0, 4);
+			memset(Rip_header.Rip_table[length].Rip_nexthop, 0, 4);
+			Rip_header.Rip_table[length].Rip_metric = htonl(entry.metric + 1); // Metric을 1증가 시켜줌
 			length++;
 		}
 	}
