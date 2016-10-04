@@ -101,8 +101,6 @@ BEGIN_MESSAGE_MAP(CRouterDlg, CDialog)
 	ON_BN_CLICKED(IDC_PROXY_ADD, &CRouterDlg::OnBnClickedProxyAdd)
 	ON_BN_CLICKED(IDCANCEL, &CRouterDlg::OnBnClickedCancel)
 	ON_BN_CLICKED(IDC_NIC_SET_BUTTON, &CRouterDlg::OnBnClickedNicSetButton)
-	ON_BN_CLICKED(IDC_ROUTING_ADD, &CRouterDlg::OnBnClickedRoutingAdd)
-	ON_BN_CLICKED(IDC_ROUTING_DELETE, &CRouterDlg::OnBnClickedRoutingDelete)
 	ON_CBN_SELCHANGE(IDC_NIC1_COMBO, &CRouterDlg::OnCbnSelchangeNic1Combo)
 	ON_CBN_SELCHANGE(IDC_NIC2_COMBO, &CRouterDlg::OnCbnSelchangeNic2Combo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_ROUTING_TABLE, &CRouterDlg::OnLvnItemchangedRoutingTable)
@@ -355,40 +353,6 @@ void CRouterDlg::OnBnClickedNicSetButton()
 	/////////////////////////////////////////////////////////////////////
 }
 
-
-void CRouterDlg::OnBnClickedRoutingAdd()
-{
-	/*	//router Table Add버튼
-	if( RtDlg.DoModal() == IDOK ){
-	RoutingTable rt;
-
-	memcpy(&rt.Destnation,RtDlg.GetDestIp(),6);
-	rt.Flag = RtDlg.GetFlag();
-	memcpy(&rt.Gateway,RtDlg.GetGateway(),6);
-	memcpy(&rt.Netmask,RtDlg.GetNetmask(),6);
-	rt.Interface = RtDlg.GetInterface();
-	rt.Metric = RtDlg.GetMetric();
-
-	route_table.AddTail(rt);
-	UpdateRouteTable();
-	}
-	*/
-}
-
-void CRouterDlg::OnBnClickedRoutingDelete()
-{
-	/*
-	// router Table delete버튼
-	int index = -1;
-	index = ListBox_RoutingTable.GetSelectionMark();
-	if(index != -1){
-	POSITION pos = route_table.FindIndex(index);
-	route_table.RemoveAt(pos);
-	UpdateRouteTable();
-	}
-	*/
-}
-
 // NicList Set
 void CRouterDlg::setNicList(void)
 {
@@ -408,16 +372,6 @@ void CRouterDlg::setNicList(void)
 	m_nic1.SetCurSel(0);
 	m_nic2.SetCurSel(1);
 }	
-
-/* not used
-void CRouterDlg::add_route_table(unsigned char ip[4], unsigned int metric, unsigned char dstInterface[4])
-{
-RoutingTable rt;
-memcpy(&rt.IpAddressByte, ip, 4);
-rt.Metric = metric;
-memcpy(&rt.Interface, dstInterface, 4);
-}
-*/
 
 // UpdateRouteTable
 void CRouterDlg::UpdateRouteTable()
