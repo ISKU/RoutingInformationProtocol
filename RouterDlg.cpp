@@ -50,8 +50,8 @@ CRouterDlg::CRouterDlg(CWnd* pParent /*=NULL*/)
 	m_EthernetLayer = new CEthernetLayer("Ethernet");
 	m_ARPLayer = new CARPLayer("ARP");
 	m_IPLayer = new CIPLayer("IP");
-	m_UDPLayer = new CUDPLayer("UDP"); // MH: UDP Layer
-	m_RIPLayer = new CRIPLayer("RIP"); // MH: RIP Layer
+	m_UDPLayer = new CUDPLayer("UDP"); // UDP Layer
+	m_RIPLayer = new CRIPLayer("RIP"); // RIP Layer
 
 	// Layer 추가										
 	m_LayerMgr.AddLayer( this );				
@@ -59,8 +59,8 @@ CRouterDlg::CRouterDlg(CWnd* pParent /*=NULL*/)
 	m_LayerMgr.AddLayer( m_EthernetLayer );
 	m_LayerMgr.AddLayer( m_ARPLayer );
 	m_LayerMgr.AddLayer( m_IPLayer );
-	m_LayerMgr.AddLayer( m_UDPLayer ); // MH: UDP Layer 추가
-	m_LayerMgr.AddLayer( m_RIPLayer ); // MH: RIP LAyer 추가
+	m_LayerMgr.AddLayer( m_UDPLayer ); // UDP Layer 추가
+	m_LayerMgr.AddLayer( m_RIPLayer ); // RIP LAyer 추가
 
 	// Layer연결 ///////////////////////////////////////////////////////////////////////////
 	m_NILayer->SetUpperLayer(m_EthernetLayer);
@@ -75,7 +75,7 @@ CRouterDlg::CRouterDlg(CWnd* pParent /*=NULL*/)
 	m_RIPLayer->SetUpperLayer(this);
 	m_RIPLayer->SetUnderLayer(m_UDPLayer);
 	this->SetUnderLayer(m_RIPLayer);
-	// MH: 새롭게 추가된 UDP, RIP Layer를 연결 Ethernet-> ARP -> IP -> UDP -> RIP -> Dialog
+	// 새롭게 추가된 UDP, RIP Layer를 연결 Ethernet-> ARP -> IP -> UDP -> RIP -> Dialog
 }
 
 void CRouterDlg::DoDataExchange(CDataExchange* pDX)
@@ -313,6 +313,7 @@ void CRouterDlg::OnBnClickedNicSetButton()
 	RoutingTable rt1;
 	for(int i=0; i<4; i++)
 		rt1.ipAddress[i] = nic1_ip[i] & netmask[i];
+	memcpy(rt1.subnetmask, netmask, 4);
 	rt1.metric = 0x0;
 	rt1.out_interface = 1;
 	memset(&rt1.nexthop, 0, 4);
@@ -320,6 +321,7 @@ void CRouterDlg::OnBnClickedNicSetButton()
 	RoutingTable rt2;
 	for(int i=0; i<4; i++)
 		rt2.ipAddress[i] = nic2_ip[i] & netmask[i];
+	memcpy(rt2.subnetmask, netmask, 4);
 	rt2.metric = 0x0;
 	rt2.out_interface = 2;
 	memset(&rt2.nexthop, 0, 4);
@@ -349,7 +351,7 @@ void CRouterDlg::OnBnClickedNicSetButton()
 
 	m_RIPLayer->Send(1, 1, 0);
 	m_RIPLayer->Send(1, 2, 0);
-	StartReadThread(); // MH: RIP Response Thread start 30초
+	StartReadThread(); // RIP Response Thread start 30초
 	/////////////////////////////////////////////////////////////////////
 }
 

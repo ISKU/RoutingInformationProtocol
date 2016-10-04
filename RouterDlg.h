@@ -52,10 +52,11 @@ public:
 	pcap_if_t *Devices_2; //interface 1
 
 	typedef struct _RoutingTable {
-		unsigned char	ipAddress[4];
-		unsigned int	metric;
-		unsigned char	out_interface;
-		unsigned char	nexthop[4];
+		unsigned char ipAddress[4];
+		unsigned char subnetmask[4];
+		unsigned int metric;
+		unsigned char out_interface;
+		unsigned char nexthop[4];
 	} RoutingTable, *RoutingTablePtr;
 
 	static CList<RoutingTable, RoutingTable&> route_table;

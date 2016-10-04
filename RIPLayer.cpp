@@ -88,6 +88,7 @@ BOOL CRIPLayer::Receive(unsigned char* ppayload, int dev_num)
 			} else { // 해당 IP가 존재하지 않으면 그대로 Routing table에 추가
 				for(int i = 0; i < 4; i++)
 					entry.ipAddress[i] = pFrame->Rip_table[index].Rip_ipAddress[i] & netmask[i];
+				memcpy(entry.subnetmask, pFrame->Rip_table[index].Rip_subnetmask, 4);
 				entry.metric = metric;
 				entry.out_interface = dev_num;
 				memcpy(&entry.nexthop, routerDlg->m_IPLayer->GetSrcIPForRIPLayer(dev_num), 4);
@@ -131,7 +132,7 @@ int CRIPLayer::CreateResponseMessageTable(int dev_num)
 			Rip_header.Rip_table[length].Rip_family = 0x0200;
 			Rip_header.Rip_table[length].Rip_tag = 0x0100;
 			memcpy(Rip_header.Rip_table[length].Rip_ipAddress, entry.ipAddress, 4);
-			memset(Rip_header.Rip_table[length].Rip_subnetmask, 0, 4);
+			memcpy(Rip_header.Rip_table[length].Rip_subnetmask, entry.subnetmask, 4);
 			memset(Rip_header.Rip_table[length].Rip_nexthop, 0, 4);
 			Rip_header.Rip_table[length].Rip_metric = htonl(entry.metric + 1); // Metric을 1증가 시켜줌
 			length++;
