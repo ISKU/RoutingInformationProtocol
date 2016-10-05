@@ -133,6 +133,8 @@ BOOL CIPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 
 BOOL CIPLayer::Receive(unsigned char* ppayload, int dev_num)
 {
+	unsigned char broadcast[4] = { 0xff, 0xff, 0xff , 0xff };
+	
 	CRouterDlg* routerDlg = ((CRouterDlg *) (GetUpperLayer(0)->GetUpperLayer(0)->GetUpperLayer(0)));
 	PIpHeader pFrame = (PIpHeader) ppayload;
 
@@ -142,28 +144,37 @@ BOOL CIPLayer::Receive(unsigned char* ppayload, int dev_num)
 	if(!IsValidChecksum((unsigned char*) pFrame, ntohs(pFrame->Ip_checksum)))
 		return FALSE;
 	
+	if (memcmp(pFrame->Ip_dstAddressByte, broadcast, 4)) { //broadcast가 아닐 경우
+		if(memcmp(pFrame->Ip_dstAddressByte, GetSrcIP(1), 4) && memcmp(pFrame->Ip_dstAddressByte, GetSrcIP(2), 4)) { //router의 주소가 아닐 경우
+			int selectIndex = Forwarding(pFrame->Ip_dstAddressByte);
+		
+			if (selectIndex != -1) { //routing 정보가 존재
+				CRouterDlg::RoutingTable entry = CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(selectIndex));
+	
+				if (entry.out_interface != dev_num) { //routing해야할 곳이 패킷이 들어온 방향과 다를 때
+					unsigned char zeroip[4], destip[4];
+					memcpy(destip, entry.nexthop, 4);
+					memset(zeroip, 0, 4);
+			
+					if (memcmp(zeroip, destip, 4) == 0) //목표 network가 해당 router에 붙어있음
+						SetDstIP(pFrame->Ip_dstAddressByte, entry.out_interface);
+					else //목표 router가 한 hop 이상 떨어져있음
+						SetDstIP(destip, entry.out_interface);
+				
+					Ip_header.Ip_timeToLive = htons(ntohs(pFrame->Ip_timeToLive) - 1);
+					Send((unsigned char*) pFrame->Ip_data, (int) htons(pFrame->Ip_len), entry.out_interface);
+					Ip_header.Ip_timeToLive = 0x05;
+				}
+			}
+		}
+	}
+
 	if (pFrame->Ip_protocol == 0x11) { // udp protocol (17) 확인
 		SetSrcIPForRIPLayer(pFrame->Ip_srcAddressByte, dev_num);
 		((CUDPLayer*)GetUpperLayer(0))->SetReceivePseudoHeader(pFrame->Ip_srcAddressByte, pFrame->Ip_dstAddressByte, (unsigned short) htons(ntohs(pFrame->Ip_len) - IP_HEADER_SIZE));
 		return GetUpperLayer(0)->Receive((unsigned char *)pFrame->Ip_data, dev_num);
 	}
-	else {
-		unsigned char destip[4];
-		unsigned char zeroip[4];
-		int selectIndex = Forwarding(pFrame->Ip_dstAddressByte);
-		memset(zeroip, 0, 4);
 
-		if(selectIndex != -1) {
-			memcpy(destip, CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(selectIndex)).nexthop, 4);
-			if (!memcmp(zeroip, CRouterDlg::route_table.Findindex(selectIndex)).nexthop, 4)
-				SetDstIP(pFrame->Ip_dstAddressByte);
-			else
-				SetDstIP(destip, dev_num);
-			routerDlg->m_ARPLayer->Send((unsigned char*) pFrame, (int) htons(pFrame->Ip_len) + IP_HEADER_SIZE, dev_num);
-			return TRUE;
-		}
-	}
-		
 	return FALSE;
 }
 
@@ -186,27 +197,14 @@ int CIPLayer::Forwarding(unsigned char destip[4])
 {
 	CRouterDlg::RoutingTable entry;
 	int size = CRouterDlg::route_table.GetCount();
-	unsigned char netmask[4] = { 0xff, 0xff, 0xff , 0 };
 	unsigned char networkid[4];
 
-	for(int i = 0; i < 4; i++)
-		networkid[i] = destip[i] & netmask[i];
-
-	return ContainsRouteTableEntry(networkid);
-}
-
-int CIPLayer::ContainsRouteTableEntry(unsigned char Ip_addr[4]) 
-{
-	CRouterDlg::RoutingTable entry;
-	int size = CRouterDlg::route_table.GetCount();
-
-	if (size != 0) {
-		for(int index = 0; index < size; index++) {
-			entry = CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(index));
-			if(!memcmp(Ip_addr, entry.ipAddress,  4)) 
-				return index; // IP가 일치하는 Entry가 존재하면 그 index return.
-		}
+	for(int index = 0; index < size; index++) {
+		entry = CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(index));
+		for(int i = 0; i < 4; i++)
+			networkid[i] = destip[i] & entry.subnetmask[i];
+		if(!memcmp(networkid, entry.ipAddress,  4)) 
+			return index; // IP가 일치하는 Entry가 존재하면 그 index return.
 	}
-
 	return -1;
 }

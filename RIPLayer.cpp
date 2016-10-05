@@ -75,11 +75,16 @@ BOOL CRIPLayer::Receive(unsigned char* ppayload, int dev_num)
 				/* routerDlg->m_IPLayer->GetSrcIP(2) : 이 부분이 next-hop을 나타내는 것인가? 확인할 것 !!! */
 				if (!memcmp((unsigned char*) routerDlg->m_IPLayer->GetSrcIP(dev_num), pFrame->Rip_table[index].Rip_nexthop, 4)) { // next-hop이 같은 경우
 					entry.metric = metric;
+					entry.status = 1;
+					entry.time = 10;
 					CRouterDlg::route_table.SetAt(CRouterDlg::route_table.FindIndex(selectIndex), entry);
 				} else { // next-hop이 다른 경우
 					if (metric < entry.metric) { // 새로운 metric수가 더 작으면 그걸로 Update
 						entry.metric = metric;
+						entry.out_interface = dev_num;
 						memcpy(&entry.nexthop, routerDlg->m_IPLayer->GetSrcIPForRIPLayer(dev_num), 4);
+						entry.status = 1;
+						entry.time = 10;
 						CRouterDlg::route_table.SetAt(CRouterDlg::route_table.FindIndex(selectIndex), entry);
 					} else { // 이미 존재하던 metric수가 더 작으면 그대로 둠
 						;
@@ -87,11 +92,13 @@ BOOL CRIPLayer::Receive(unsigned char* ppayload, int dev_num)
 				}
 			} else { // 해당 IP가 존재하지 않으면 그대로 Routing table에 추가
 				for(int i = 0; i < 4; i++)
-					entry.ipAddress[i] = pFrame->Rip_table[index].Rip_ipAddress[i] & netmask[i];
+					entry.ipAddress[i] = pFrame->Rip_table[index].Rip_ipAddress[i];
 				memcpy(entry.subnetmask, pFrame->Rip_table[index].Rip_subnetmask, 4);
 				entry.metric = metric;
 				entry.out_interface = dev_num;
 				memcpy(&entry.nexthop, routerDlg->m_IPLayer->GetSrcIPForRIPLayer(dev_num), 4);
+				entry.status = 1;
+				entry.time = 10;
 				CRouterDlg::route_table.AddTail(entry);
 			}
 		}
