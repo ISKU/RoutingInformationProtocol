@@ -53,5 +53,7 @@ private:
 	unsigned char dev_1_ip_addr_for_rip[4];
 	unsigned char dev_2_ip_addr_for_rip[4];
 	inline void	ResetHeader(); // IP 헤더 초기화 함수
+	inline int Forwarding(unsigned char destip[4]);
+	int CIPLayer::ContainsRouteTableEntry(unsigned char Ip_addr[4]);
 	IpHeader Ip_header; // IP1 헤더 구조체 변수
 };
