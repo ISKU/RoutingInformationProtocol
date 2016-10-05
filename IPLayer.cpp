@@ -167,6 +167,7 @@ BOOL CIPLayer::Receive(unsigned char* ppayload, int dev_num)
 				}
 			}
 		}
+		return TRUE;
 	}
 
 	if (pFrame->Ip_protocol == 0x11) { // udp protocol (17) »Æ¿Œ
