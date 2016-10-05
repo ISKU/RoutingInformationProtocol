@@ -164,10 +164,11 @@ BOOL CIPLayer::Receive(unsigned char* ppayload, int dev_num)
 					Ip_header.Ip_timeToLive = htons(ntohs(pFrame->Ip_timeToLive) - 1);
 					Send((unsigned char*) pFrame->Ip_data, (int) htons(pFrame->Ip_len), entry.out_interface);
 					Ip_header.Ip_timeToLive = 0x05;
+					return TRUE;
 				}
 			}
 		}
-		return TRUE;
+		
 	}
 
 	if (pFrame->Ip_protocol == 0x11) { // udp protocol (17) »Æ¿Œ

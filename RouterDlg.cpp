@@ -554,32 +554,34 @@ unsigned int CRouterDlg::WaitRipResponseMessagePacket_2(LPVOID pParam){
 }
 
 unsigned int CRouterDlg::TableCheck(LPVOID pParam){
-	int size = route_table.GetCount();
+	CList<RoutingTable, RoutingTable&> *temp_route_table;
 	RoutingTable entry;
 
 	while(1) {
-		for (int index = 0; index < route_table.GetCount(); index++) {
-			entry = route_table.GetAt(route_table.FindIndex(index));
+		temp_route_table = &(((CRouterDlg*)pParam)->route_table);
+		for (int index = 0; index < temp_route_table->GetCount(); index++) {
+			entry = temp_route_table->GetAt(temp_route_table->FindIndex(index));
 			if (entry.status == 1) {
 				if (entry.time != 0)
-					entry.time -= entry.time;
+					entry.time = entry.time - 1;
 				else {
 					entry.status = 2;
 					entry.metric = 16;
 					entry.time = 5;
 				}
-				route_table.SetAt(route_table.FindIndex(index), entry);
-			} else {
+				temp_route_table->SetAt(temp_route_table->FindIndex(index), entry);
+			} else if (entry.status == 2) {
 				if(entry.time != 0) {
-					entry.time -= entry.time;
-					route_table.SetAt(route_table.FindIndex(index), entry);
+					entry.time = entry.time - 1;
+					temp_route_table->SetAt(temp_route_table->FindIndex(index), entry);
 				} else {
-					route_table.RemoveAt(route_table.FindIndex(index));
+					temp_route_table->RemoveAt(temp_route_table->FindIndex(index));
 					index--;
 				}
 			}
 		}
-		Sleep(1000);
+		((CRouterDlg*)pParam)->UpdateRouteTable();
+		Sleep(1500);
 	}
 
 	return 0;
