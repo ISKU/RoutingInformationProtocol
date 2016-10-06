@@ -11,7 +11,7 @@ public:
 	unsigned char* GetSrcIP(int dev_num);
 	unsigned char GetProtocol(int dev_num);
 	unsigned char* GetSrcIPForRIPLayer(int dev_num);
-	unsigned short SetChecksum();
+	unsigned short SetChecksum(unsigned char p_header[20]);
 	BOOL IsValidChecksum(unsigned char* received_header, unsigned short checksum);
 	void SetDstIP(unsigned char* ip, int dev_num);
 	void SetSrcIP(unsigned char* ip, int dev_num);
