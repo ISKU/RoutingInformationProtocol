@@ -119,14 +119,11 @@ BOOL CIPLayer::IsValidChecksum(unsigned char* p_header, unsigned short checksum)
 // ppayload == (unsigned char*)&Tcp_header
 BOOL CIPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 {
-	unsigned char header[IP_HEADER_SIZE];
-
 	// IP 주소 셋팅은 Set 버튼을 눌렀을때 셋팅이 되었으므로 data와 전체 크기를 저장후 전송
 	nlength = nlength + IP_HEADER_SIZE;
 	Ip_header.Ip_len = (unsigned short) htons(nlength);
 	memcpy(Ip_header.Ip_srcAddressByte, GetSrcIP(dev_num), 4);
-	memcpy(header, &Ip_header, IP_HEADER_SIZE);
-	Ip_header.Ip_checksum = htons(SetChecksum(header));
+	Ip_header.Ip_checksum = htons(SetChecksum((unsigned char*)&Ip_header));
 
 	memcpy(Ip_header.Ip_data , ppayload , nlength);
 	BOOL bSuccess = mp_UnderLayer->Send((unsigned char*) &Ip_header , nlength, dev_num);
@@ -136,10 +133,10 @@ BOOL CIPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 BOOL CIPLayer::Receive(unsigned char* ppayload, int dev_num)
 {
 	unsigned char broadcast[4] = { 0xff, 0xff, 0xff , 0xff };
+	unsigned char multicast[4] = { 0xe0, 0, 0, 0x9 };
 	
 	CRouterDlg* routerDlg = ((CRouterDlg *) (GetUpperLayer(0)->GetUpperLayer(0)->GetUpperLayer(0)));
 	PIpHeader pFrame = (PIpHeader) ppayload;
-	unsigned char header[IP_HEADER_SIZE];
 
 	if(!memcmp(pFrame->Ip_srcAddressByte, GetSrcIP(dev_num), 4)) //자신이 보낸 패킷은 버린다
 		return FALSE;
@@ -147,7 +144,8 @@ BOOL CIPLayer::Receive(unsigned char* ppayload, int dev_num)
 	if(!IsValidChecksum((unsigned char*) pFrame, ntohs(pFrame->Ip_checksum)))
 		return FALSE;
 	
-	if (memcmp(pFrame->Ip_dstAddressByte, broadcast, 4)) { //broadcast가 아닐 경우
+
+	if (memcmp(pFrame->Ip_dstAddressByte, broadcast, 4) && memcmp(pFrame->Ip_dstAddressByte, multicast, 4)) { //broadcast, multicast가 아닐 경우
 		if(memcmp(pFrame->Ip_dstAddressByte, GetSrcIP(1), 4) && memcmp(pFrame->Ip_dstAddressByte, GetSrcIP(2), 4)) { //router의 주소가 아닐 경우
 			int selectIndex = Forwarding(pFrame->Ip_dstAddressByte);
 		
@@ -165,9 +163,8 @@ BOOL CIPLayer::Receive(unsigned char* ppayload, int dev_num)
 						SetDstIP(destip, entry.out_interface);
 				
 					pFrame->Ip_timeToLive = htons(ntohs(pFrame->Ip_timeToLive) - 1); // TTL 감소
-					memcpy(header, pFrame, IP_HEADER_SIZE);
-					pFrame->Ip_checksum = ntohs(SetChecksum(header)); // Checksum 계산
-					Send((unsigned char*) pFrame->Ip_data, (int) htons(pFrame->Ip_len), entry.out_interface);
+					pFrame->Ip_checksum = htons(SetChecksum((unsigned char*) pFrame)); // Checksum 계산
+					mp_UnderLayer->Send((unsigned char*) pFrame, (int) ntohs(pFrame->Ip_len), entry.out_interface);
 					return TRUE;
 				}
 			}
