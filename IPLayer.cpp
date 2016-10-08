@@ -77,9 +77,8 @@ void CIPLayer::SetProtocol(unsigned char protocol, int dev_num)
 	Ip_header.Ip_protocol = protocol;
 }
 
-unsigned short CIPLayer::SetChecksum()
+unsigned short CIPLayer::SetChecksum(unsigned char p_header[20])
 {
-	unsigned char* p_header = (unsigned char*) &Ip_header;
 	unsigned short word;
 	unsigned int sum = 0;
 	int i;
@@ -124,7 +123,7 @@ BOOL CIPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 	nlength = nlength + IP_HEADER_SIZE;
 	Ip_header.Ip_len = (unsigned short) htons(nlength);
 	memcpy(Ip_header.Ip_srcAddressByte, GetSrcIP(dev_num), 4);
-	Ip_header.Ip_checksum = htons(SetChecksum());
+	Ip_header.Ip_checksum = htons(SetChecksum((unsigned char*)&Ip_header));
 
 	memcpy(Ip_header.Ip_data , ppayload , nlength);
 	BOOL bSuccess = mp_UnderLayer->Send((unsigned char*) &Ip_header , nlength, dev_num);
@@ -134,6 +133,7 @@ BOOL CIPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 BOOL CIPLayer::Receive(unsigned char* ppayload, int dev_num)
 {
 	unsigned char broadcast[4] = { 0xff, 0xff, 0xff , 0xff };
+	unsigned char multicast[4] = { 0xe0, 0, 0, 0x9 };
 	
 	CRouterDlg* routerDlg = ((CRouterDlg *) (GetUpperLayer(0)->GetUpperLayer(0)->GetUpperLayer(0)));
 	PIpHeader pFrame = (PIpHeader) ppayload;
@@ -144,7 +144,8 @@ BOOL CIPLayer::Receive(unsigned char* ppayload, int dev_num)
 	if(!IsValidChecksum((unsigned char*) pFrame, ntohs(pFrame->Ip_checksum)))
 		return FALSE;
 	
-	if (memcmp(pFrame->Ip_dstAddressByte, broadcast, 4)) { //broadcast가 아닐 경우
+
+	if (memcmp(pFrame->Ip_dstAddressByte, broadcast, 4) && memcmp(pFrame->Ip_dstAddressByte, multicast, 4)) { //broadcast, multicast가 아닐 경우
 		if(memcmp(pFrame->Ip_dstAddressByte, GetSrcIP(1), 4) && memcmp(pFrame->Ip_dstAddressByte, GetSrcIP(2), 4)) { //router의 주소가 아닐 경우
 			int selectIndex = Forwarding(pFrame->Ip_dstAddressByte);
 		
@@ -161,9 +162,9 @@ BOOL CIPLayer::Receive(unsigned char* ppayload, int dev_num)
 					else //목표 router가 한 hop 이상 떨어져있음
 						SetDstIP(destip, entry.out_interface);
 				
-					Ip_header.Ip_timeToLive = htons(ntohs(pFrame->Ip_timeToLive) - 1);
-					Send((unsigned char*) pFrame->Ip_data, (int) htons(pFrame->Ip_len), entry.out_interface);
-					Ip_header.Ip_timeToLive = 0x05;
+					pFrame->Ip_timeToLive = htons(ntohs(pFrame->Ip_timeToLive) - 1); // TTL 감소
+					pFrame->Ip_checksum = htons(SetChecksum((unsigned char*) pFrame)); // Checksum 계산
+					mp_UnderLayer->Send((unsigned char*) pFrame, (int) ntohs(pFrame->Ip_len), entry.out_interface);
 					return TRUE;
 				}
 			}
