@@ -120,12 +120,14 @@ BOOL CIPLayer::IsValidChecksum(unsigned char* p_header, unsigned short checksum)
 BOOL CIPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 {
 	// IP 주소 셋팅은 Set 버튼을 눌렀을때 셋팅이 되었으므로 data와 전체 크기를 저장후 전송
+
+	memcpy(Ip_header.Ip_data , ppayload , nlength);
 	nlength = nlength + IP_HEADER_SIZE;
 	Ip_header.Ip_len = (unsigned short) htons(nlength);
 	memcpy(Ip_header.Ip_srcAddressByte, GetSrcIP(dev_num), 4);
 	Ip_header.Ip_checksum = htons(SetChecksum((unsigned char*)&Ip_header));
 
-	memcpy(Ip_header.Ip_data , ppayload , nlength);
+	
 	BOOL bSuccess = mp_UnderLayer->Send((unsigned char*) &Ip_header , nlength, dev_num);
 	return bSuccess;
 }

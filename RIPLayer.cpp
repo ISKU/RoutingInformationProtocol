@@ -54,7 +54,7 @@ BOOL CRIPLayer::Receive(unsigned char* ppayload, int dev_num)
 	unsigned char netmask[4] = { 0xff, 0xff, 0xff , 0 };
 
 	// 받은 Packet에서 RIP Message에 실린 Entry의 길이(UDP 전체 길이에서 UDP header(8), RIP 맨 윗줄(4) 를 빼줌)
-	unsigned short length = routerDlg->m_UDPLayer->GetLength(dev_num) - 12;
+	unsigned short length = routerDlg->m_UDPLayer->GetLengthForRIP(dev_num) - 12;
 
 	if (pFrame->Rip_command == 0x01) { // command : Request를 받은 경우, command를 Response로 변경하여 다시 보냄
 		routerDlg->m_IPLayer->SetDstIP(routerDlg->m_IPLayer->GetSrcIPForRIPLayer(dev_num), dev_num);
