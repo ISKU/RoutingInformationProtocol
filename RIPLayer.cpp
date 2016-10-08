@@ -72,7 +72,9 @@ BOOL CRIPLayer::Receive(unsigned char* ppayload, int dev_num)
 			if (selectIndex != -1) { 	// 해당 IP가 존재한다면 비교하여 Update
 				entry = CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(selectIndex));
 				
-				/* routerDlg->m_IPLayer->GetSrcIP(2) : 이 부분이 next-hop을 나타내는 것인가? 확인할 것 !!! */
+				// routerDlg->m_IPLayer->GetSrcIP(2) : next-hop
+
+				// next-hop이 같은 경우
 				if (!memcmp((unsigned char*) routerDlg->m_IPLayer->GetSrcIP(dev_num), pFrame->Rip_table[index].Rip_nexthop, 4)) { // next-hop이 같은 경우
 					entry.metric = metric;
 					CRouterDlg::route_table.SetAt(CRouterDlg::route_table.FindIndex(selectIndex), entry);
@@ -134,7 +136,10 @@ int CRIPLayer::CreateResponseMessageTable(int dev_num)
 			memcpy(Rip_header.Rip_table[length].Rip_ipAddress, entry.ipAddress, 4);
 			memcpy(Rip_header.Rip_table[length].Rip_subnetmask, entry.subnetmask, 4);
 			memset(Rip_header.Rip_table[length].Rip_nexthop, 0, 4);
-			Rip_header.Rip_table[length].Rip_metric = htonl(entry.metric + 1); // Metric을 1증가 시켜줌
+			if(entry.metric == INFINITY_HOP_COUNT)
+				Rip_header.Rip_table[length].Rip_metric = htonl(entry.metric);
+			else
+				Rip_header.Rip_table[length].Rip_metric = htonl(entry.metric + 1); // Metric을 1증가 시켜줌
 			length++;
 		}
 	}

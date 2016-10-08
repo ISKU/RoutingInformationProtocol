@@ -155,11 +155,11 @@ BOOL CIPLayer::Receive(unsigned char* ppayload, int dev_num)
 
 		if(selectIndex != -1) {
 			memcpy(destip, CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(selectIndex)).nexthop, 4);
-			if (!memcmp(zeroip, CRouterDlg::route_table.Findindex(selectIndex)).nexthop, 4)
-				SetDstIP(pFrame->Ip_dstAddressByte);
+			if (!memcmp(zeroip, CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(selectIndex)).nexthop, 4))
+				SetDstIP(pFrame->Ip_dstAddressByte, CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(selectIndex)).out_interface);
 			else
-				SetDstIP(destip, dev_num);
-			routerDlg->m_ARPLayer->Send((unsigned char*) pFrame, (int) htons(pFrame->Ip_len) + IP_HEADER_SIZE, dev_num);
+				SetDstIP(destip, CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(selectIndex)).out_interface);
+			routerDlg->m_ARPLayer->Send((unsigned char*) pFrame, (int) htons(pFrame->Ip_len) + IP_HEADER_SIZE, CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(selectIndex)).out_interface);
 			return TRUE;
 		}
 	}
