@@ -77,9 +77,8 @@ void CIPLayer::SetProtocol(unsigned char protocol, int dev_num)
 	Ip_header.Ip_protocol = protocol;
 }
 
-unsigned short CIPLayer::SetChecksum()
+unsigned short CIPLayer::SetChecksum(unsigned char p_header[20])
 {
-	unsigned char* p_header = (unsigned char*) &Ip_header;
 	unsigned short word;
 	unsigned int sum = 0;
 	int i;
@@ -124,7 +123,7 @@ BOOL CIPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 	nlength = nlength + IP_HEADER_SIZE;
 	Ip_header.Ip_len = (unsigned short) htons(nlength);
 	memcpy(Ip_header.Ip_srcAddressByte, GetSrcIP(dev_num), 4);
-	Ip_header.Ip_checksum = htons(SetChecksum());
+	Ip_header.Ip_checksum = htons(SetChecksum((unsigned char*)&Ip_header));
 
 	memcpy(Ip_header.Ip_data , ppayload , nlength);
 	BOOL bSuccess = mp_UnderLayer->Send((unsigned char*) &Ip_header , nlength, dev_num);
@@ -133,6 +132,9 @@ BOOL CIPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 
 BOOL CIPLayer::Receive(unsigned char* ppayload, int dev_num)
 {
+	unsigned char broadcast[4] = { 0xff, 0xff, 0xff , 0xff };
+	unsigned char multicast[4] = { 0xe0, 0, 0, 0x9 };
+	
 	CRouterDlg* routerDlg = ((CRouterDlg *) (GetUpperLayer(0)->GetUpperLayer(0)->GetUpperLayer(0)));
 	PIpHeader pFrame = (PIpHeader) ppayload;
 
@@ -142,6 +144,34 @@ BOOL CIPLayer::Receive(unsigned char* ppayload, int dev_num)
 	if(!IsValidChecksum((unsigned char*) pFrame, ntohs(pFrame->Ip_checksum)))
 		return FALSE;
 	
+
+	if (memcmp(pFrame->Ip_dstAddressByte, broadcast, 4) && memcmp(pFrame->Ip_dstAddressByte, multicast, 4)) { //broadcast, multicast가 아닐 경우
+		if(memcmp(pFrame->Ip_dstAddressByte, GetSrcIP(1), 4) && memcmp(pFrame->Ip_dstAddressByte, GetSrcIP(2), 4)) { //router의 주소가 아닐 경우
+			int selectIndex = Forwarding(pFrame->Ip_dstAddressByte);
+		
+			if (selectIndex != -1) { //routing 정보가 존재
+				CRouterDlg::RoutingTable entry = CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(selectIndex));
+	
+				if (entry.out_interface != dev_num) { //routing해야할 곳이 패킷이 들어온 방향과 다를 때
+					unsigned char zeroip[4], destip[4];
+					memcpy(destip, entry.nexthop, 4);
+					memset(zeroip, 0, 4);
+			
+					if (memcmp(zeroip, destip, 4) == 0) //목표 network가 해당 router에 붙어있음
+						SetDstIP(pFrame->Ip_dstAddressByte, entry.out_interface);
+					else //목표 router가 한 hop 이상 떨어져있음
+						SetDstIP(destip, entry.out_interface);
+				
+					pFrame->Ip_timeToLive = htons(ntohs(pFrame->Ip_timeToLive) - 1); // TTL 감소
+					pFrame->Ip_checksum = htons(SetChecksum((unsigned char*) pFrame)); // Checksum 계산
+					mp_UnderLayer->Send((unsigned char*) pFrame, (int) ntohs(pFrame->Ip_len), entry.out_interface);
+					return TRUE;
+				}
+			}
+		}
+		
+	}
+
 	if (pFrame->Ip_protocol == 0x11) { // udp protocol (17) 확인
 		SetSrcIPForRIPLayer(pFrame->Ip_srcAddressByte, dev_num);
 		((CUDPLayer*)GetUpperLayer(0))->SetReceivePseudoHeader(pFrame->Ip_srcAddressByte, pFrame->Ip_dstAddressByte, (unsigned short) htons(ntohs(pFrame->Ip_len) - IP_HEADER_SIZE));
@@ -186,27 +216,14 @@ int CIPLayer::Forwarding(unsigned char destip[4])
 {
 	CRouterDlg::RoutingTable entry;
 	int size = CRouterDlg::route_table.GetCount();
-	unsigned char netmask[4] = { 0xff, 0xff, 0xff , 0 };
 	unsigned char networkid[4];
 
-	for(int i = 0; i < 4; i++)
-		networkid[i] = destip[i] & netmask[i];
-
-	return ContainsRouteTableEntry(networkid);
-}
-
-int CIPLayer::ContainsRouteTableEntry(unsigned char Ip_addr[4]) 
-{
-	CRouterDlg::RoutingTable entry;
-	int size = CRouterDlg::route_table.GetCount();
-
-	if (size != 0) {
-		for(int index = 0; index < size; index++) {
-			entry = CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(index));
-			if(!memcmp(Ip_addr, entry.ipAddress,  4)) 
-				return index; // IP가 일치하는 Entry가 존재하면 그 index return.
-		}
+	for(int index = 0; index < size; index++) {
+		entry = CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(index));
+		for(int i = 0; i < 4; i++)
+			networkid[i] = destip[i] & entry.subnetmask[i];
+		if(!memcmp(networkid, entry.ipAddress,  4)) 
+			return index; // IP가 일치하는 Entry가 존재하면 그 index return.
 	}
-
 	return -1;
 }

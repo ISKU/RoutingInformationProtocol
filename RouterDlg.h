@@ -57,6 +57,8 @@ public:
 		unsigned int metric;
 		unsigned char out_interface;
 		unsigned char nexthop[4];
+		unsigned int status;
+		unsigned int time;
 	} RoutingTable, *RoutingTablePtr;
 
 	static CList<RoutingTable, RoutingTable&> route_table;
@@ -93,7 +95,9 @@ public:
 	// RIP 응답 메시지 30초 Thread
 	CWinThread* pThread_1;
 	CWinThread* pThread_2;
+	CWinThread* pThread_3;
 	void StartReadThread();
 	static unsigned int WaitRipResponseMessagePacket_1(LPVOID pParam);
 	static unsigned int WaitRipResponseMessagePacket_2(LPVOID pParam);
+	static unsigned int TableCheck(LPVOID pParam);
 };

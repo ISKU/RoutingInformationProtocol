@@ -5,6 +5,8 @@
 #include "ProxyTableAdder.h"
 #include "IPLayer.h"
 
+#include <vector>
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -135,11 +137,14 @@ BOOL CRouterDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE); // 작은 아이콘을 설정합니다.
 
 	// ListBox에 초기 Colum을 삽입
-	ListBox_RoutingTable.InsertColumn(0, _T(" "), LVCFMT_CENTER, 20, -1);
-	ListBox_RoutingTable.InsertColumn(1,_T("IP Address"),LVCFMT_CENTER,175,-1);
-	ListBox_RoutingTable.InsertColumn(2,_T("Metric"),LVCFMT_CENTER, 86,-1);
-	ListBox_RoutingTable.InsertColumn(3,_T("Interface"),LVCFMT_CENTER, 80,-1);
-	ListBox_RoutingTable.InsertColumn(4,_T("Next Hop"),LVCFMT_CENTER, 175,-1);
+	ListBox_RoutingTable.InsertColumn(0, _T(" "), LVCFMT_CENTER, 25, -1);
+	ListBox_RoutingTable.InsertColumn(1,_T("Destination"),LVCFMT_CENTER, 115, -1);
+	ListBox_RoutingTable.InsertColumn(2,_T("Metric"),LVCFMT_CENTER, 70, -1);
+	ListBox_RoutingTable.InsertColumn(3,_T("Next Hop"),LVCFMT_CENTER, 115, -1);
+	ListBox_RoutingTable.InsertColumn(4,_T("Interface"),LVCFMT_CENTER, 70, -1);
+	ListBox_RoutingTable.InsertColumn(5,_T("Subnet Mask"),LVCFMT_CENTER, 115, -1);
+	ListBox_RoutingTable.InsertColumn(6,_T("Status"),LVCFMT_CENTER, 50, -1);
+	ListBox_RoutingTable.InsertColumn(7,_T("Time"),LVCFMT_CENTER, 50, -1);
 
 	ListBox_ARPCacheTable.InsertColumn(0,_T("IP address"),LVCFMT_CENTER,100,-1);
 	ListBox_ARPCacheTable.InsertColumn(1,_T("Mac address"),LVCFMT_CENTER,120,-1);
@@ -317,6 +322,7 @@ void CRouterDlg::OnBnClickedNicSetButton()
 	rt1.metric = 0x0;
 	rt1.out_interface = 1;
 	memset(&rt1.nexthop, 0, 4);
+	rt1.status = 0;
 
 	RoutingTable rt2;
 	for(int i=0; i<4; i++)
@@ -325,6 +331,7 @@ void CRouterDlg::OnBnClickedNicSetButton()
 	rt2.metric = 0x0;
 	rt2.out_interface = 2;
 	memset(&rt2.nexthop, 0, 4);
+	rt2.status = 0;
 
 	route_table.AddTail(rt1);
 	route_table.AddTail(rt2);
@@ -379,7 +386,7 @@ void CRouterDlg::setNicList(void)
 void CRouterDlg::UpdateRouteTable()
 {
 	RoutingTable entry;
-	CString tableNumber, ipAddress, metric, out_interface, nexthop;
+	CString tableNumber, ipAddress, metric, out_interface, nexthop, subnetmask, status, time;
 	int size = route_table.GetCount();
 
 	// dev_num으로 구분하여 interface에 해당하는 route_table을 사용하여 CList에 있는 entry를 모두 레이아웃에 추가한다!
@@ -393,12 +400,28 @@ void CRouterDlg::UpdateRouteTable()
 		metric.Format("%d", entry.metric);
 		out_interface.Format("%d", entry.out_interface);
 		nexthop.Format("%d.%d.%d.%d", entry.nexthop[0], entry.nexthop[1], entry.nexthop[2], entry.nexthop[3]);
+		subnetmask.Format("%d.%d.%d.%d", entry.subnetmask[0], entry.subnetmask[1], entry.subnetmask[2], entry.subnetmask[3]);
+		if (entry.status == 1) {
+			status = "연결됨";
+			time.Format("%d", entry.time);
+		} else if (entry.status == 2) {
+			status = "응답없음";
+			time.Format("%d", entry.time);
+		}
+		else {
+			status = "";
+			time = "";
+		}
 
 		ListBox_RoutingTable.InsertItem(index, tableNumber);
 		ListBox_RoutingTable.SetItem(index, 1, LVIF_TEXT, ipAddress, 0, 0, 0, NULL);
 		ListBox_RoutingTable.SetItem(index, 2, LVIF_TEXT, metric, 0, 0, 0, NULL);
-		ListBox_RoutingTable.SetItem(index, 3, LVIF_TEXT, out_interface, 0, 0, 0, NULL);
-		ListBox_RoutingTable.SetItem(index, 4, LVIF_TEXT, nexthop, 0, 0, 0, NULL);
+		ListBox_RoutingTable.SetItem(index, 3, LVIF_TEXT, nexthop, 0, 0, 0, NULL);
+		ListBox_RoutingTable.SetItem(index, 4, LVIF_TEXT, out_interface, 0, 0, 0, NULL);
+		ListBox_RoutingTable.SetItem(index, 5, LVIF_TEXT, subnetmask, 0, 0, 0, NULL);
+		ListBox_RoutingTable.SetItem(index, 6, LVIF_TEXT, status, 0, 0, 0, NULL);
+		ListBox_RoutingTable.SetItem(index, 7, LVIF_TEXT, time, 0, 0, 0, NULL);
+		
 		ListBox_RoutingTable.UpdateWindow();
 	}
 }
@@ -501,7 +524,8 @@ void CRouterDlg::StartReadThread()
 {
 	pThread_1 = AfxBeginThread(WaitRipResponseMessagePacket_1 , this);
 	pThread_2 = AfxBeginThread(WaitRipResponseMessagePacket_2 , this);
-	if(pThread_1 == NULL || pThread_2 == NULL) {
+	pThread_3 = AfxBeginThread(TableCheck , this);
+	if(pThread_1 == NULL || pThread_2 == NULL || pThread_3 == NULL) {
 		AfxMessageBox("Read 쓰레드 생성 실패");
 	}
 }
@@ -524,6 +548,40 @@ unsigned int CRouterDlg::WaitRipResponseMessagePacket_2(LPVOID pParam){
 	while(1) {
 		Sleep(7000);
 		temp_CRouterDlgLayer->GetUnderLayer()->Send(2, 2, 0);
+	}
+
+	return 0;
+}
+
+unsigned int CRouterDlg::TableCheck(LPVOID pParam){
+	CList<RoutingTable, RoutingTable&> *temp_route_table;
+	RoutingTable entry;
+
+	while(1) {
+		temp_route_table = &(((CRouterDlg*)pParam)->route_table);
+		for (int index = 0; index < temp_route_table->GetCount(); index++) {
+			entry = temp_route_table->GetAt(temp_route_table->FindIndex(index));
+			if (entry.status == 1) {
+				if (entry.time != 0)
+					entry.time = entry.time - 1;
+				else {
+					entry.status = 2;
+					entry.metric = 16;
+					entry.time = 5;
+				}
+				temp_route_table->SetAt(temp_route_table->FindIndex(index), entry);
+			} else if (entry.status == 2) {
+				if(entry.time != 0) {
+					entry.time = entry.time - 1;
+					temp_route_table->SetAt(temp_route_table->FindIndex(index), entry);
+				} else {
+					temp_route_table->RemoveAt(temp_route_table->FindIndex(index));
+					index--;
+				}
+			}
+		}
+		((CRouterDlg*)pParam)->UpdateRouteTable();
+		Sleep(1500);
 	}
 
 	return 0;

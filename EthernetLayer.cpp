@@ -78,13 +78,24 @@ BOOL CEthernetLayer::Receive(unsigned char* ppayload, int dev_num)
 	PEthernetHeader pFrame = (PEthernetHeader) ppayload;
 	char Broad[6];
 	memset(Broad,0xff,6);
+
+	char IPv4mcast_mask[6] = {0x01,0x00,0x5e,0x80,0x00,0x00};
+	char IPv4mcast[6] = {0x01,0x00,0x5e,0x00,0x00,0x00};
+
+	char result[6];
+	for(int i=0; i<6; i++) {
+		result[i] = pFrame->Ethernet_dstAddr.S_un.s_ether_addr[i] & IPv4mcast_mask[i];
+	}
+
 	EthernetHeader Ethernet_Header;
 
 	if(!memcmp(&pFrame->Ethernet_srcAddr,GetSourceAddress(dev_num),6)) //자신에게 보낸 페킷
 		return FALSE;
 	
-	if((!memcmp(&pFrame->Ethernet_dstAddr,GetSourceAddress(dev_num),6)) || (!memcmp(&pFrame->Ethernet_dstAddr,Broad,6))) {
-		//Broad Cast or 자신 Mac주소
+	if((!memcmp(&pFrame->Ethernet_dstAddr,GetSourceAddress(dev_num),6)) ||
+	   (!memcmp(&pFrame->Ethernet_dstAddr,Broad,6)) ||
+		!memcmp(result,IPv4mcast,6)) {
+		//Broad Cast or 자신 Mac주소 or Multicast
 		if(pFrame->Ethernet_type == arp_type) //arp_type일 경우
 			GetUpperLayer(1)->Receive((unsigned char*) pFrame->Ethernet_data, dev_num);
 		else if(pFrame->Ethernet_type == ip_type) //ip_type일 경우
