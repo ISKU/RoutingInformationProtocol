@@ -523,11 +523,17 @@ void CRouterDlg::OnLvnItemchangedRoutingTable2(NMHDR *pNMHDR, LRESULT *pResult)
 void CRouterDlg::StartReadThread()
 {
 	pThread_1 = AfxBeginThread(WaitRipResponseMessagePacket_1 , this);
-	pThread_2 = AfxBeginThread(WaitRipResponseMessagePacket_2 , this);
+	//pThread_2 = AfxBeginThread(WaitRipResponseMessagePacket_2 , this);
 	pThread_3 = AfxBeginThread(TableCheck , this);
+
+	if(pThread_1 == NULL || pThread_3 == NULL) {
+		AfxMessageBox("Read 쓰레드 생성 실패");
+	}
+	/*
 	if(pThread_1 == NULL || pThread_2 == NULL || pThread_3 == NULL) {
 		AfxMessageBox("Read 쓰레드 생성 실패");
 	}
+	*/
 }
 
 unsigned int CRouterDlg::WaitRipResponseMessagePacket_1(LPVOID pParam) 
@@ -537,6 +543,7 @@ unsigned int CRouterDlg::WaitRipResponseMessagePacket_1(LPVOID pParam)
 	while(1) {
 		Sleep(7000);
 		temp_CRouterDlgLayer->GetUnderLayer()->Send(2, 1, 0);
+		temp_CRouterDlgLayer->GetUnderLayer()->Send(2, 2, 0);
 	}
 
 	return 0;
@@ -581,7 +588,7 @@ unsigned int CRouterDlg::TableCheck(LPVOID pParam){
 			}
 		}
 		((CRouterDlg*)pParam)->UpdateRouteTable();
-		Sleep(1500);
+		Sleep(10000);
 	}
 
 	return 0;

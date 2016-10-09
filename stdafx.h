@@ -70,6 +70,7 @@
 #define ip_type						htons(0x0800)
 #define arp_type					htons(0x0806)
 
+#define INFINITY_HOP_COUNT			16
 
 #ifdef _UNICODE
 #if defined _M_IX86

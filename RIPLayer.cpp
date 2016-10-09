@@ -54,7 +54,7 @@ BOOL CRIPLayer::Receive(unsigned char* ppayload, int dev_num)
 	unsigned char netmask[4] = { 0xff, 0xff, 0xff , 0 };
 
 	// 받은 Packet에서 RIP Message에 실린 Entry의 길이(UDP 전체 길이에서 UDP header(8), RIP 맨 윗줄(4) 를 빼줌)
-	unsigned short length = routerDlg->m_UDPLayer->GetLength(dev_num) - 12;
+	unsigned short length = routerDlg->m_UDPLayer->GetLengthForRIP(dev_num) - 12;
 
 	if (pFrame->Rip_command == 0x01) { // command : Request를 받은 경우, command를 Response로 변경하여 다시 보냄
 		routerDlg->m_IPLayer->SetDstIP(routerDlg->m_IPLayer->GetSrcIPForRIPLayer(dev_num), dev_num);
@@ -72,7 +72,9 @@ BOOL CRIPLayer::Receive(unsigned char* ppayload, int dev_num)
 			if (selectIndex != -1) { 	// 해당 IP가 존재한다면 비교하여 Update
 				entry = CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(selectIndex));
 				
-				/* routerDlg->m_IPLayer->GetSrcIP(2) : 이 부분이 next-hop을 나타내는 것인가? 확인할 것 !!! */
+				// routerDlg->m_IPLayer->GetSrcIP(2) : next-hop
+
+				// next-hop이 같은 경우
 				if (!memcmp((unsigned char*) routerDlg->m_IPLayer->GetSrcIP(dev_num), pFrame->Rip_table[index].Rip_nexthop, 4)) { // next-hop이 같은 경우
 					entry.metric = metric;
 					entry.status = 1;
@@ -141,7 +143,10 @@ int CRIPLayer::CreateResponseMessageTable(int dev_num)
 			memcpy(Rip_header.Rip_table[length].Rip_ipAddress, entry.ipAddress, 4);
 			memcpy(Rip_header.Rip_table[length].Rip_subnetmask, entry.subnetmask, 4);
 			memset(Rip_header.Rip_table[length].Rip_nexthop, 0, 4);
-			Rip_header.Rip_table[length].Rip_metric = htonl(entry.metric + 1); // Metric을 1증가 시켜줌
+			if(entry.metric == INFINITY_HOP_COUNT)
+				Rip_header.Rip_table[length].Rip_metric = htonl(entry.metric);
+			else
+				Rip_header.Rip_table[length].Rip_metric = htonl(entry.metric + 1); // Metric을 1증가 시켜줌
 			length++;
 		}
 	}

@@ -45,6 +45,23 @@ void CUDPLayer::SetLength(unsigned short length, int dev_num)
 		dev_1_length = length;
 	else
 		dev_2_length = length;
+
+	Udp_header.Udp_length = length;
+}
+
+void CUDPLayer::SetLengthForRIP(unsigned short length, int dev_num)
+{
+	if(dev_num == 1)
+		dev_1_length_for_rip = length;
+	else
+		dev_2_length_for_rip = length;
+}
+
+unsigned short CUDPLayer::GetLengthForRIP(int dev_num)
+{
+	if(dev_num == 1)
+		return dev_1_length_for_rip;
+	return dev_2_length_for_rip;
 }
 
 void CUDPLayer::SetSendPseudoHeader(unsigned short length, int dev_num)
@@ -150,7 +167,7 @@ BOOL CUDPLayer::Receive(unsigned char* ppayload, int dev_num)
 		return FALSE;
 
 	if (pFrame->Udp_dstPort == 0x0802) { // check dst port 520
-		SetLength((unsigned short) htons(pFrame->Udp_length), dev_num);
+		SetLengthForRIP((unsigned short) htons(pFrame->Udp_length), dev_num);
 		bSuccess = GetUpperLayer(0)->Receive((unsigned char *) pFrame->Udp_data, dev_num);
 	}
 
