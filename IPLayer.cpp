@@ -145,7 +145,9 @@ BOOL CIPLayer::Receive(unsigned char* ppayload, int dev_num)
 
 	if(!IsValidChecksum((unsigned char*) pFrame, ntohs(pFrame->Ip_checksum)))
 		return FALSE;
-	
+
+	if( pFrame->Ip_timeToLive == 0 ) //ttl이 0일 경우 버림
+      return FALSE;
 
 	if (memcmp(pFrame->Ip_dstAddressByte, broadcast, 4) && memcmp(pFrame->Ip_dstAddressByte, multicast, 4)) { //broadcast, multicast가 아닐 경우
 		if(memcmp(pFrame->Ip_dstAddressByte, GetSrcIP(1), 4) && memcmp(pFrame->Ip_dstAddressByte, GetSrcIP(2), 4)) { //router의 주소가 아닐 경우
