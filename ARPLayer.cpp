@@ -172,6 +172,7 @@ BOOL CARPLayer::Receive(unsigned char* ppayload,int dev_num) {
 				entry.cache_type = complete;
 				memcpy(entry.Mac_addr, Cache_entry->Mac_addr, 6);
 				Cache_Table.SetAt(pos, entry);
+				updateCacheTable();
 				free(Cache_entry); //메모리 해제
 			} else //존재하지 않을경우 테이블에 삽입
 				InsertCache(Cache_entry); //cache insert
