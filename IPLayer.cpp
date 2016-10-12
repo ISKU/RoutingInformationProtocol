@@ -155,7 +155,8 @@ BOOL CIPLayer::Receive(unsigned char* ppayload, int dev_num)
 		
 			if (selectIndex != -1) { //routing 정보가 존재
 				CRouterDlg::RoutingTable entry = CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(selectIndex));
-	
+				if (entry.metric == 16)
+					return FALSE;
 				if (entry.out_interface != dev_num) { //routing해야할 곳이 패킷이 들어온 방향과 다를 때
 					unsigned char zeroip[4], destip[4];
 					memcpy(destip, entry.nexthop, 4);
@@ -172,6 +173,7 @@ BOOL CIPLayer::Receive(unsigned char* ppayload, int dev_num)
 					return TRUE;
 				}
 			}
+			return FALSE;
 		}
 		
 	}
@@ -180,22 +182,6 @@ BOOL CIPLayer::Receive(unsigned char* ppayload, int dev_num)
 		SetSrcIPForRIPLayer(pFrame->Ip_srcAddressByte, dev_num);
 		((CUDPLayer*)GetUpperLayer(0))->SetReceivePseudoHeader(pFrame->Ip_srcAddressByte, pFrame->Ip_dstAddressByte, (unsigned short) htons(ntohs(pFrame->Ip_len) - IP_HEADER_SIZE));
 		return GetUpperLayer(0)->Receive((unsigned char *)pFrame->Ip_data, dev_num);
-	}
-	else {
-		unsigned char destip[4];
-		unsigned char zeroip[4];
-		int selectIndex = Forwarding(pFrame->Ip_dstAddressByte);
-		memset(zeroip, 0, 4);
-
-		if(selectIndex != -1) {
-			memcpy(destip, CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(selectIndex)).nexthop, 4);
-			if (!memcmp(zeroip, CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(selectIndex)).nexthop, 4))
-				SetDstIP(pFrame->Ip_dstAddressByte, CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(selectIndex)).out_interface);
-			else
-				SetDstIP(destip, CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(selectIndex)).out_interface);
-			routerDlg->m_ARPLayer->Send((unsigned char*) pFrame, (int) htons(pFrame->Ip_len) + IP_HEADER_SIZE, CRouterDlg::route_table.GetAt(CRouterDlg::route_table.FindIndex(selectIndex)).out_interface);
-			return TRUE;
-		}
 	}
 		
 	return FALSE;

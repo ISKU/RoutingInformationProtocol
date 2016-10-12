@@ -76,11 +76,21 @@ BOOL CRIPLayer::Receive(unsigned char* ppayload, int dev_num)
 
 				// next-hop이 같은 경우
 				if (!memcmp((unsigned char*) routerDlg->m_IPLayer->GetSrcIP(dev_num), pFrame->Rip_table[index].Rip_nexthop, 4)) { // next-hop이 같은 경우
-					entry.metric = metric;
-					entry.status = 1;
-					entry.time = 10;
+					if (metric == 16 && entry.status != 2) {
+						entry.metric = metric;
+						entry.status = 2;
+						entry.time = 5;
+					} else if (metric == 16 && entry.status == 2) {
+						;
+					} else {
+						entry.metric = metric;
+						entry.status = 1;
+						entry.time = 10;
+					}
 					CRouterDlg::route_table.SetAt(CRouterDlg::route_table.FindIndex(selectIndex), entry);
 				} else { // next-hop이 다른 경우
+					if (metric == 16)
+						continue;
 					if (metric < entry.metric) { // 새로운 metric수가 더 작으면 그걸로 Update
 						entry.metric = metric;
 						entry.out_interface = dev_num;
@@ -93,6 +103,8 @@ BOOL CRIPLayer::Receive(unsigned char* ppayload, int dev_num)
 					}
 				}
 			} else { // 해당 IP가 존재하지 않으면 그대로 Routing table에 추가
+				if (metric == 16)
+					continue;
 				for(int i = 0; i < 4; i++)
 					entry.ipAddress[i] = pFrame->Rip_table[index].Rip_ipAddress[i];
 				memcpy(entry.subnetmask, pFrame->Rip_table[index].Rip_subnetmask, 4);
