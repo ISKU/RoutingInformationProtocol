@@ -97,9 +97,11 @@ BOOL CARPLayer::Receive(unsigned char* ppayload,int dev_num) {
 			if((index = SearchIpAtTable(receive_arp_message->arp_srcprotoaddr)) != -1) { //cache table에 존재할 경우 갱신, 그리고 Reply 보내지 않음
 				//해당 entry를 찾아 값 수정
 				POSITION pos = Cache_Table.FindIndex(index);
-				Cache_Table.GetAt(pos).cache_ttl = 1200;
-				Cache_Table.GetAt(pos).cache_type = complete;
-				memcpy(Cache_Table.GetAt(pos).Mac_addr, receive_arp_message->arp_srchaddr, 6);
+				CACHE_ENTRY entry = Cache_Table.GetAt(pos);
+				entry.cache_ttl = 1200;
+				entry.cache_type = complete;
+				memcpy(entry.Mac_addr, receive_arp_message->arp_srchaddr, 6);
+				Cache_Table.SetAt(pos, entry);
 				updateCacheTable();
 			} else { //없을 경우 -- ARP table에 추가
 				LPCACHE_ENTRY Cache_entry;
@@ -122,9 +124,11 @@ BOOL CARPLayer::Receive(unsigned char* ppayload,int dev_num) {
 			if((index = SearchIpAtTable(receive_arp_message->arp_srcprotoaddr)) != -1) { //table에존재할 경우
 				//해당 entry를 찾아 값 수정
 				POSITION pos = Cache_Table.FindIndex(index);
-				Cache_Table.GetAt(pos).cache_ttl = 1200;
-				Cache_Table.GetAt(pos).cache_type = complete;
-				memcpy(Cache_Table.GetAt(pos).Mac_addr, receive_arp_message->arp_srchaddr, 6);
+				CACHE_ENTRY entry = Cache_Table.GetAt(pos);
+				entry.cache_ttl = 1200;
+				entry.cache_type = complete;
+				memcpy(entry.Mac_addr, receive_arp_message->arp_srchaddr, 6);
+				Cache_Table.SetAt(pos, entry);
 				updateCacheTable();
 			} else { //테이블에 존재하지 않을경우 해당 ip추가
 				//arp_message 설정종료
@@ -163,10 +167,11 @@ BOOL CARPLayer::Receive(unsigned char* ppayload,int dev_num) {
 
 			if((index = SearchIpAtTable(Cache_entry->Ip_addr)) != -1) { //존재할경우 값을교환
 				POSITION pos = Cache_Table.FindIndex(index);
-				LPCACHE_ENTRY entry = &Cache_Table.GetAt(pos);
-				entry->cache_ttl = 1200;
-				entry->cache_type = complete;
-				memcpy(entry->Mac_addr,Cache_entry->Mac_addr,6);
+				CACHE_ENTRY entry = Cache_Table.GetAt(pos);
+				entry.cache_ttl = 1200;
+				entry.cache_type = complete;
+				memcpy(entry.Mac_addr, Cache_entry->Mac_addr, 6);
+				Cache_Table.SetAt(pos, entry);
 				free(Cache_entry); //메모리 해제
 			} else //존재하지 않을경우 테이블에 삽입
 				InsertCache(Cache_entry); //cache insert
@@ -195,12 +200,10 @@ int CARPLayer::SearchIpAtTable(unsigned char Ip_addr[4])
 	CACHE_ENTRY temp;
 
 	count = Cache_Table.GetCount();
-	if(count != 0) { //캐시 테이블에 값이 존재 할 경우
-		for(i = 0; i < count; i++) {
-			temp = Cache_Table.GetAt(Cache_Table.FindIndex(i));
-			if(memcmp(Ip_addr, temp.Ip_addr, 4) == 0)
-				ret = i;
-		}
+	for(i = 0; i < count; i++) {
+		temp = Cache_Table.GetAt(Cache_Table.FindIndex(i));
+		if(memcmp(Ip_addr, temp.Ip_addr, 4) == 0)
+			ret = i;
 	}
 	return ret;	
 }
@@ -211,13 +214,10 @@ int CARPLayer::SearchProxyTable(unsigned char Ip_addr[4])
 	PROXY_ENTRY temp;
 
 	count = Proxy_Table.GetCount();
-	if(count != 0) { //존재 할 경우
-		count = Proxy_Table.GetCount();
-		for(i = 0; i < count; i++) {
-			temp = Proxy_Table.GetAt(Proxy_Table.FindIndex(i));
-			if(memcmp(Ip_addr ,temp.Ip_addr ,  4) == 0)
-				ret = i; // index 값 리턴
-		}
+	for(i = 0; i < count; i++) {
+		temp = Proxy_Table.GetAt(Proxy_Table.FindIndex(i));
+		if(memcmp(Ip_addr ,temp.Ip_addr ,  4) == 0)
+			ret = i; // index 값 리턴
 	}
 	return ret;	
 }
