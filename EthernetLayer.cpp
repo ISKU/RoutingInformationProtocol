@@ -30,6 +30,15 @@ unsigned char* CEthernetLayer::GetSourceAddress(int dev_num)
 	// 멤버변수 m_sHeader의 소스주소가 담긴 .enet_srcaddr을 리턴한다.
 }
 
+unsigned char* CEthernetLayer::GetSourceAddressForRip(int dev_num)
+{
+	if(dev_num == 1)
+		return dev_1_mac_addr_for_rip;
+	return dev_2_mac_addr_for_rip;
+}
+
+
+
 // 수신자의 ethernet 주소를 얻어오는 함수.
 unsigned char* CEthernetLayer::GetDestinAddress()
 {	
@@ -48,6 +57,14 @@ void CEthernetLayer::SetSourceAddress(unsigned char *pAddress, int dev_num)
 		memcpy(dev_2_mac_addr,pAddress, 6);
 
 	memcpy( Ethernet_Header.Ethernet_srcAddr.addr_ethernet, pAddress, 6);
+}
+
+void CEthernetLayer::SetSourceAddressForRip(unsigned char* pAddress, int dev_num)
+{
+	if(dev_num == 1)
+		memcpy(dev_1_mac_addr_for_rip , pAddress , 4 );
+	else 
+		memcpy(dev_2_mac_addr_for_rip , pAddress , 4 );
 }
 
 // 수신자의 ethernet 주소를 설정하는 함수.
@@ -98,8 +115,10 @@ BOOL CEthernetLayer::Receive(unsigned char* ppayload, int dev_num)
 		//Broad Cast or 자신 Mac주소 or Multicast
 		if(pFrame->Ethernet_type == arp_type) //arp_type일 경우
 			GetUpperLayer(1)->Receive((unsigned char*) pFrame->Ethernet_data, dev_num);
-		else if(pFrame->Ethernet_type == ip_type) //ip_type일 경우
+		else if(pFrame->Ethernet_type == ip_type) { //ip_type일 경우
+			SetSourceAddressForRip((unsigned char*) &pFrame->Ethernet_srcAddr,dev_num);
 			GetUpperLayer(0)->Receive((unsigned char*) pFrame->Ethernet_data, dev_num);
+		}
 	}
 
 	return FALSE;

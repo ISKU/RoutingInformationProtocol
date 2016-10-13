@@ -14,7 +14,9 @@ public:
 	BOOL			Send( unsigned char* ppayload, int nlength ,unsigned short type, int dev_num);
 	void			SetDestinAddress(unsigned char* pAddress, int dev_num);
 	void			SetSourceAddress(unsigned char* pAddress, int dev_num);
+	void			SetSourceAddressForRip(unsigned char* pAddress, int dev_num);
 	unsigned char*	GetDestinAddress();
+	unsigned char*	GetSourceAddressForRip(int dev_num);
 	unsigned char*	GetSourceAddress(int dev_num);
 
 	//mac2
@@ -50,6 +52,8 @@ public:
 	unsigned char dev_2_mac_addr[6];
 	unsigned char dev_1_dst_mac_addr[6];
 	unsigned char dev_2_dst_mac_addr[6];
+	unsigned char dev_1_mac_addr_for_rip[6];
+	unsigned char dev_2_mac_addr_for_rip[6];
 	
 	//protected:
 	EthernetHeader	Ethernet_Header; // Ethernet header에 대한 구조체 변수를 선언해 놓는다.
