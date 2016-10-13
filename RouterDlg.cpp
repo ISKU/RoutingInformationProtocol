@@ -270,20 +270,27 @@ void CRouterDlg::OnBnClickedCancel()
 void CRouterDlg::OnBnClickedNicSetButton()
 {
 	LPADAPTER adapter = NULL; // 랜카드에 대한 정보를 저장하는 pointer 변수
-	PPACKET_OID_DATA OidData;
+	PPACKET_OID_DATA OidData1;
+	PPACKET_OID_DATA OidData2;
 	pcap_if_t *Devices;
 
-	OidData = (PPACKET_OID_DATA)malloc(sizeof(PACKET_OID_DATA));
-	OidData->Oid = 0x01010101;
-	OidData->Length = 6;
+	OidData1 = (PPACKET_OID_DATA)malloc(sizeof(PACKET_OID_DATA));
+	OidData1->Oid = 0x01010101;
+	OidData1->Length = 6;
 
-	ZeroMemory(OidData->Data,6);
+	OidData2 = (PPACKET_OID_DATA)malloc(sizeof(PACKET_OID_DATA));
+	OidData2->Oid = 0x01010101;
+	OidData2->Length = 6;
+
+
+	ZeroMemory(OidData1->Data,6);
+	ZeroMemory(OidData2->Data,6);
 	char DeviceName1[512];
 	char DeviceName2[512];
 	char strError[30];
 
 	if(pcap_findalldevs_ex( PCAP_SRC_IF_STRING, NULL , &Devices , strError) != 0)
-		printf("pcap_findalldevs_ex() error : %s\n", strError);
+		printf("pcap_findalldevs_ex() error : %s\n", strError);\
 
 	m_nic1.GetLBText(m_nic1.GetCurSel() , DeviceName1);	// 콤보 박스에 선택된 Device의 이름을 얻어옴
 	m_nic2.GetLBText(m_nic2.GetCurSel() , DeviceName2);
@@ -302,9 +309,9 @@ void CRouterDlg::OnBnClickedNicSetButton()
 
 	//mac 주소 설정
 	adapter = PacketOpenAdapter((Device1->name+8));
-	PacketRequest( adapter, FALSE, OidData);
+	PacketRequest( adapter, FALSE, OidData1);
 	adapter = PacketOpenAdapter((Device2->name+8));
-	PacketRequest( adapter, FALSE, OidData);
+	PacketRequest( adapter, FALSE, OidData2);
 
 	//ip주소 설정
 	unsigned char nic1_ip[4];
@@ -353,8 +360,8 @@ void CRouterDlg::OnBnClickedNicSetButton()
 	m_IPLayer->SetDstIP(broadcast, 2);
 	m_IPLayer->SetSrcIP(nic1_ip, 1);
 	m_IPLayer->SetSrcIP(nic2_ip, 2);
-	m_EthernetLayer->SetSourceAddress(OidData->Data,1);
-	m_EthernetLayer->SetSourceAddress(OidData->Data,2);
+	m_EthernetLayer->SetSourceAddress(OidData1->Data,1);
+	m_EthernetLayer->SetSourceAddress(OidData2->Data,2);
 
 	m_RIPLayer->Send(1, 1, 0);
 	m_RIPLayer->Send(1, 2, 0);

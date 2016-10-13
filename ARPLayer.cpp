@@ -24,7 +24,9 @@ BOOL CARPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 	int index;
 	CRouterDlg * routerDlg =  ((CRouterDlg *)(GetUnderLayer()->GetUpperLayer(0)->GetUpperLayer(0)->GetUpperLayer(0)->GetUpperLayer(0)));
 	unsigned char broadcast[4];
+	unsigned char ether_broad[6];
 	memset(broadcast,0xff,4);
+	memset(ether_broad,0xff,6);
 
 	if(memcmp(routerDlg->m_IPLayer->GetDstIP(dev_num), broadcast, 4) == 0) //broadcast일 경우 바로 보냄
 		return ((CEthernetLayer*) this->mp_UnderLayer)->Send(ppayload,nlength, ip_type, dev_num);
@@ -42,6 +44,7 @@ BOOL CARPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 		memcpy(arp_message.arp_srcprotoaddr, routerDlg->m_IPLayer->GetSrcIP(dev_num), 4); //보내는 사람 ip
 		memcpy(arp_message.arp_destprotoaddr, routerDlg->m_IPLayer->GetDstIP(dev_num), 4); //받는사람 ip
 		memcpy(arp_message.arp_srchaddr, routerDlg->m_EthernetLayer->GetSourceAddress(dev_num), 6); //보내는 사람 mac
+		((CEthernetLayer*) this->mp_UnderLayer)->SetDestinAddress(ether_broad, dev_num);
 		return ((CEthernetLayer*) this->mp_UnderLayer)->Send((unsigned char *) &arp_message, ARP_MESSAGE_SIZE, arp_type, dev_num); //gratuitous arp message
 	}
 
@@ -63,12 +66,17 @@ BOOL CARPLayer::Send(unsigned char* ppayload, int nlength, int dev_num)
 	memcpy(arp_message.arp_srchaddr, ((CEthernetLayer*) this->mp_UnderLayer)->GetSourceAddress(dev_num), 6); //보내는사람 mac
 	memcpy(arp_message.arp_destprotoaddr,routerDlg->m_IPLayer->GetDstIP(dev_num), 4); //받는사람 ip
 	//LP_arpDlg->SetTimer(wait_timer,4000,NULL); //timer 가동
+	((CEthernetLayer*) this->mp_UnderLayer)->SetDestinAddress(ether_broad, dev_num);
 	return ((CEthernetLayer*)this->mp_UnderLayer)->Send((unsigned char *) &arp_message, ARP_MESSAGE_SIZE, arp_type, dev_num); //arp message
 }
 
 BOOL CARPLayer::Receive(unsigned char* ppayload,int dev_num) {
 	LPARP_Message receive_arp_message = (LPARP_Message)ppayload;
 	CRouterDlg * routerDlg =  ((CRouterDlg *)(GetUnderLayer()->GetUpperLayer(0)->GetUpperLayer(0)->GetUpperLayer(0)->GetUpperLayer(0)));
+	unsigned char broadcast[4];
+	unsigned char ether_broad[6];
+	memset(broadcast,0xff,4);
+	memset(ether_broad,0xff,6);
 	ResetMessage();
 
 	int index;
@@ -82,6 +90,7 @@ BOOL CARPLayer::Receive(unsigned char* ppayload,int dev_num) {
 				memcpy(proxy_arp_message.arp_desthdaddr, receive_arp_message->arp_srchaddr, 6);
 				memcpy(proxy_arp_message.arp_srchaddr, routerDlg->m_EthernetLayer->GetSourceAddress(dev_num), 6);
 				memcpy(proxy_arp_message.arp_srcprotoaddr, entry.Ip_addr, 4); //proxy 값을 넣고 전송시켜줌
+				((CEthernetLayer*) this->mp_UnderLayer)->SetDestinAddress(ether_broad, dev_num);
 				routerDlg->m_EthernetLayer->Send((unsigned char *) &proxy_arp_message, ARP_MESSAGE_SIZE, arp_type,dev_num);
 			}
 
@@ -138,6 +147,7 @@ BOOL CARPLayer::Receive(unsigned char* ppayload,int dev_num) {
 			memcpy(arp_message.arp_srcprotoaddr, routerDlg->m_IPLayer->GetSrcIP(dev_num), 4); //보내는 사람ip주소
 			memcpy(arp_message.arp_desthdaddr, receive_arp_message->arp_srchaddr, 6); //mac주소
 			memcpy(arp_message.arp_destprotoaddr, receive_arp_message->arp_srcprotoaddr, 4); //ip주소
+			((CEthernetLayer*) this->mp_UnderLayer)->SetDestinAddress(receive_arp_message->arp_srchaddr, dev_num);
 			routerDlg->m_EthernetLayer->Send((unsigned char *) &arp_message,ARP_MESSAGE_SIZE,arp_type,dev_num);
 		}
 
@@ -162,6 +172,7 @@ BOOL CARPLayer::Receive(unsigned char* ppayload,int dev_num) {
 				entry.cache_type = complete;
 				memcpy(entry.Mac_addr, Cache_entry->Mac_addr, 6);
 				Cache_Table.SetAt(pos, entry);
+				updateCacheTable();
 				free(Cache_entry); //메모리 해제
 			} else //존재하지 않을경우 테이블에 삽입
 				InsertCache(Cache_entry); //cache insert

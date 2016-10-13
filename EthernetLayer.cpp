@@ -141,8 +141,6 @@ BOOL CEthernetLayer::Send(unsigned char* ppayload, int nlength, unsigned short t
 
 	memcpy(&Ethernet_Header.Ethernet_data, ppayload, nlength); // data 부분을 복사 한다.
 	Ethernet_Header.Ethernet_type = type;
-	if(type == arp_type)
-		memcpy(&Ethernet_Header.Ethernet_dstAddr, Broad, 6);
 
 	// NILayer에 data를 보내는 부분.
 	return GetUnderLayer()->Send((unsigned char *) &Ethernet_Header,nlength + ETHERNET_HEADER_SIZE, dev_num);
