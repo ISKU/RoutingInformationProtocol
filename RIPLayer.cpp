@@ -26,9 +26,10 @@ BOOL CRIPLayer::Send(int command, int dev_num, int resend)
 		CreateRequestMessage();
 		messageLength = 20; // Request 인 경우에는 한개만
 	
+		//resand == 1일 경우가 따로 없어 resand에 의한 조건식이 필요 없음.
+		routerDlg->m_IPLayer->SetDstIP(broadcast, dev_num);
 		routerDlg->m_EthernetLayer->SetDestinAddress(macbroadcast, dev_num);
-		if(resend == 0)
-			routerDlg->m_IPLayer->SetDstIP(broadcast, dev_num);
+
 		routerDlg->m_UDPLayer->SetSrcPort(0x0802); // 520(UDP)
 		return mp_UnderLayer->Send((unsigned char*) &Rip_header, RIP_HEADER_SIZE + messageLength, dev_num);
 	}
@@ -37,9 +38,12 @@ BOOL CRIPLayer::Send(int command, int dev_num, int resend)
 		Rip_header.Rip_command = 0x02;
 		messageLength = CreateResponseMessageTable(dev_num) * 20;// Response인 경우에는 Routing table의 Entry 개수만큼 (4Byte * 5줄)
 	
-		routerDlg->m_EthernetLayer->SetDestinAddress(macbroadcast, dev_num);
-		if(resend == 0)
+		
+		if(resend == 0){  
 			routerDlg->m_IPLayer->SetDstIP(broadcast, dev_num);
+			routerDlg->m_EthernetLayer->SetDestinAddress(macbroadcast, dev_num);
+		}
+
 		routerDlg->m_UDPLayer->SetSrcPort(0x0802); // 520(UDP)
 		BOOL bSuccess = mp_UnderLayer->Send((unsigned char*) &Rip_header, RIP_HEADER_SIZE + messageLength, dev_num);
 	}
@@ -58,6 +62,7 @@ BOOL CRIPLayer::Receive(unsigned char* ppayload, int dev_num)
 
 	if (pFrame->Rip_command == 0x01) { // command : Request를 받은 경우, command를 Response로 변경하여 다시 보냄
 		routerDlg->m_IPLayer->SetDstIP(routerDlg->m_IPLayer->GetSrcIPForRIPLayer(dev_num), dev_num);
+		routerDlg->m_EthernetLayer->SetDestinAddress(routerDlg->m_EthernetLayer->GetSourceAddressForRip(dev_num),dev_num);// 보낸 라우터의 맥주소로 설정해줌
 		Send(2, dev_num , 1);
 	}
 
