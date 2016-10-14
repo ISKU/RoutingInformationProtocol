@@ -80,7 +80,7 @@ BOOL CRIPLayer::Receive(unsigned char* ppayload, int dev_num)
 				// routerDlg->m_IPLayer->GetSrcIP(2) : next-hop
 
 				// next-hop이 같은 경우
-				if (!memcmp((unsigned char*) routerDlg->m_IPLayer->GetSrcIP(dev_num), pFrame->Rip_table[index].Rip_nexthop, 4)) { // next-hop이 같은 경우
+				if (!memcmp(entry.nexthop, routerDlg->m_IPLayer->GetSrcIPForRIPLayer(dev_num), 4)) { // next-hop이 같은 경우
 					if (metric == 16 && entry.status != 2) {
 						entry.metric = metric;
 						entry.status = 2;
